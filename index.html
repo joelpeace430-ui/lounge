@@ -421,6 +421,13 @@ body.dark .td-id{color:#e2e8f0;}
 @media(max-width:900px){
   .shell{grid-template-columns:1fr;padding-top:60px;}
 
+  /* Turn off the backdrop-filter blur on mobile — a heavy blur recalculated every
+     scroll frame on a fixed/sticky element is the classic cause of scroll lag on
+     phone GPUs. Desktop keeps the blur (not fixed there, no scroll cost). Solid
+     background looks almost identical, costs the GPU basically nothing. */
+  .sb{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none;}
+  .topbar{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none;}
+
   /* sidebar becomes just a camera-scanner strip, shown only on Sign in */
   .sb{height:auto;position:relative;display:block;min-width:0;}
   .sb-brand,.sb-owner,.sb-nav>.sb-sec,.sb-item,.sb-hamburger{display:none;}
