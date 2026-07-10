@@ -74,6 +74,16 @@ async function handleInitiate(req, res) {
     const user = await userRes.json();
     const ownerId = user.id;
 
+    // fail fast with a clear message if any required env var is missing —
+    // this is the #1 cause of the cryptic "Unexpected end of JSON input" crash
+    // (Safaricom returns an empty body when the auth header is malformed)
+    const required = ['MPESA_CONSUMER_KEY','MPESA_CONSUMER_SECRET','MPESA_SHORTCODE','MPESA_PASSKEY','PUBLIC_BASE_URL'];
+    const missing = required.filter(k => !process.env[k]);
+    if (missing.length) {
+      console.error('Missing environment variables:', missing.join(', '));
+      return res.status(500).json({ error: 'Server is missing M-Pesa config: ' + missing.join(', ') + ' — set these in Vercel → Settings → Environment Variables, then redeploy.' });
+    }
+
     // normalize the phone number to 2547XXXXXXXX
     let phoneDigits = String(phone).replace(/\D/g, '');
     if (phoneDigits.startsWith('0')) phoneDigits = '254' + phoneDigits.slice(1);
@@ -91,10 +101,16 @@ async function handleInitiate(req, res) {
     const tokenRes = await fetch(`${baseUrl}/oauth/v1/generate?grant_type=client_credentials`, {
       headers: { Authorization: `Basic ${authStr}` },
     });
-    const tokenData = await tokenRes.json();
+    const tokenRawText = await tokenRes.text();
+    let tokenData;
+    try { tokenData = JSON.parse(tokenRawText); }
+    catch (e) {
+      console.error('Daraja auth returned non-JSON. Status:', tokenRes.status, 'Body:', tokenRawText);
+      return res.status(502).json({ error: `M-Pesa auth failed (HTTP ${tokenRes.status}): ${tokenRawText || 'empty response — check MPESA_CONSUMER_KEY/SECRET are correct'}` });
+    }
     if (!tokenData.access_token) {
       console.error('Daraja auth failed:', tokenData);
-      return res.status(502).json({ error: 'Could not authenticate with M-Pesa — check your Daraja credentials' });
+      return res.status(502).json({ error: tokenData.error_description || tokenData.errorMessage || 'Could not authenticate with M-Pesa — check your Daraja credentials' });
     }
 
     // build and send the STK push request
@@ -118,7 +134,13 @@ async function handleInitiate(req, res) {
         TransactionDesc: 'Lounge payment',
       }),
     });
-    const stkData = await stkRes.json();
+    const stkRawText = await stkRes.text();
+    let stkData;
+    try { stkData = JSON.parse(stkRawText); }
+    catch (e) {
+      console.error('STK push returned non-JSON. Status:', stkRes.status, 'Body:', stkRawText);
+      return res.status(502).json({ error: `M-Pesa STK push failed (HTTP ${stkRes.status}): ${stkRawText || 'empty response'}` });
+    }
 
     if (stkData.ResponseCode !== '0') {
       console.error('STK push rejected:', stkData);
