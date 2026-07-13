@@ -1604,9 +1604,17 @@ function getResetMode(){return localStorage.getItem('lm_daily_reset_mode')||'kee
 function getWholeShillings(){return localStorage.getItem('lm_whole_shillings')==='1';}
 function setWholeShillings(on){localStorage.setItem('lm_whole_shillings',on?'1':'0');}
 
-// Revenue + customer count for sessions that STARTED on the given date.
+// Revenue + customer count for sessions that STARTED on the given date — plus,
+// when asking about today specifically, any session that's still active right
+// now regardless of when it started. Without that second part, a session that
+// began before midnight and is still running would tick up its own Cost on the
+// Sign in page forever, but never count toward "today's total" here — the
+// money would look like it's not being added even though it genuinely is.
 function computeDayStats(dateKey){
-  const daySessions=sessions.filter(s=>dateKeyOf(s.startTime)===dateKey);
+  const daySessions=sessions.filter(s=>
+    dateKeyOf(s.startTime)===dateKey ||
+    (!s.signedOut && dateKey===todayKey())
+  );
   let revenue=0;
   daySessions.forEach(s=>{
     const elapsed=s.signedOut?(s.signOutTime-s.startTime):(Date.now()-s.startTime);
