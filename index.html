@@ -2505,16 +2505,17 @@ function switchView(v){
   // it'd just be clutter sitting above Sessions/Calendar/Settings
   const sbEl=document.querySelector('.sb');
   if(sbEl) sbEl.classList.toggle('sb-hide-mobile', v!=='signin');
-  // ...and actually STOP the camera stream while away from it, not just hide it —
-  // a running getUserMedia stream keeps decoding video in the background even
-  // when display:none, which is a heavy, continuous drain on a phone's CPU/GPU
-  // and was causing app-wide scroll lag on every other page.
-  if(window.matchMedia('(max-width:900px)').matches){
-    if(v!=='signin'){
-      pauseMobileCamera();
-    }else if(cameraEnabled && !mainStream){
-      startMainScanner();
-    }
+  // Stop the camera stream whenever we're off the Sign in tab, and restart it
+  // when we come back — not just hide it. A running getUserMedia stream keeps
+  // decoding video in the background even under display:none/inactive tabs,
+  // which is a heavy, continuous drain regardless of screen size. This used to
+  // only apply on mobile viewports, which meant on desktop/laptop the camera
+  // just kept decoding forever once started, no matter which tab you were on —
+  // that was still causing app-wide lag while typing on every other page.
+  if(v!=='signin'){
+    pauseMobileCamera();
+  }else if(cameraEnabled && !mainStream){
+    startMainScanner();
   }
   const titles={signin:'Sign in',sessions:'Sessions',debt:'Debt',calendar:'Calendar',settings:'Settings'};
   document.getElementById('view-title').textContent=titles[v];
