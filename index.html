@@ -1147,10 +1147,14 @@ body.dark{
                 <option value="60">Round up to 1 hour</option>
               </select>
             </div>
-            <div class="fg" style="margin-bottom:14px;">
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--surface2);border:1px solid var(--line);border-radius:9px;margin-bottom:14px;">
+              <div>
+                <div style="font-size:13px;font-weight:500;color:var(--ink);">Round to whole shillings</div>
+                <div style="font-size:11px;color:var(--ink3);margin-top:2px;">Prices show and calculate in whole KSh, no cents</div>
+              </div>
+              <label class="toggle-switch">
                 <input type="checkbox" id="whole-shillings-input" onchange="setWholeShillings(this.checked);updatePriceExample();updateTodayLiveTotal();renderDailyHistory();renderSessions();renderRecent();renderDebtors();"/>
-                <span>Round to whole shillings (no cents)</span>
+                <span class="toggle-slider"></span>
               </label>
             </div>
             <div style="padding:10px 12px;background:var(--surface2);border-radius:8px;margin-bottom:14px;font-size:12px;color:var(--ink3);line-height:1.7;">
