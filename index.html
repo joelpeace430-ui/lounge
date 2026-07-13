@@ -3083,6 +3083,10 @@ function sessionRowHtml(s,num,mode){
     outcell='—';
   }
   const price=calcPrice(elapsedMs);
+  // in the Debt tab, Status should always read "Debt" — every row here is a
+  // debtor by definition, so Active/Done would just be noise/confusing next
+  // to the Settle up action.
+  if(mode==='debt') badge='<span class="badge over">Debt</span>';
   const pricecell=price==null
     ?'<span style="color:var(--ink3);">—</span>'
     :s.signedOut
@@ -3188,7 +3192,7 @@ function renderDebtors(){
       <td data-label="In">—</td><td data-label="Out">—</td><td data-label="Time">—</td><td data-label="Cost">—</td>
       <td data-label="Paid">—</td>
       <td data-label="Debt">${debtCellHtml(idnum)}</td>
-      <td data-label="Status"><span class="badge out">—</span></td>
+      <td data-label="Status"><span class="badge over">Debt</span></td>
       <td data-label=""><button onclick="settleDebtor('${idnum}')" style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:var(--sans);">Settle up</button></td>
     </tr>`;
   }).join('');
