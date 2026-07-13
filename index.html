@@ -401,6 +401,10 @@ body.dark .td-id{color:#e2e8f0;}
 .cal-day.selected{background:var(--green);border-color:var(--green);}
 .cal-day.selected .cal-day-num{color:#000;}
 .cal-day.selected .cal-day-count{background:rgba(0,0,0,.15);color:#000;}
+.cal-day.has-debt{border-color:var(--red);box-shadow:0 0 0 1px var(--red);}
+.cal-day.has-debt .cal-day-num{color:var(--red);}
+.cal-day.has-debt.selected{background:var(--red);border-color:var(--red);}
+.cal-day.has-debt.selected .cal-day-num{color:#000;}
 .cal-day-num{font-size:13px;font-weight:600;font-family:var(--mono);color:var(--ink);letter-spacing:-.01em;}
 .cal-day-count{font-size:9px;font-weight:700;color:var(--green);background:var(--green-bg);border-radius:8px;padding:1px 6px;letter-spacing:.03em;}
 .cal-day-count.empty-count{visibility:hidden;}
@@ -1048,12 +1052,13 @@ body.dark{
               <th style="width:95px;">Cost</th>
               <th style="width:95px;">Paid</th>
               <th style="width:95px;">Debt</th>
+              <th style="width:110px;">Since</th>
               <th style="width:100px;">Status</th>
               <th style="width:95px;">Action</th>
             </tr>
           </thead>
           <tbody id="debt-tb">
-            <tr class="empty-row"><td colspan="12">No customers with debt right now</td></tr>
+            <tr class="empty-row"><td colspan="13">No customers with debt right now</td></tr>
           </tbody>
         </table>
         </div>
@@ -1875,6 +1880,7 @@ function speak(text){
 if(window.speechSynthesis) window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();
 function fmtMs(ms){const abs=Math.abs(ms);const h=Math.floor(abs/3600000),m=Math.floor((abs%3600000)/60000),s=Math.floor((abs%60000)/1000);return(ms<0?'-':'')+(h>0?h+'h ':'')+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');}
 function fmtTime(ts){return new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
+function fmtDate(ts){return new Date(ts).toLocaleDateString('en-GB',{day:'numeric',month:'short'});}
 function initials(name){return name.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();}
 function setPill(cls,msg){const el=document.getElementById('main-pill');el.className='spill '+cls;el.innerHTML=`<span class="sdot ${cls==='scanning'||cls==='reading'?'pulse':''}"></span> ${msg}`;}
 function armCapture(msg){
@@ -2663,6 +2669,25 @@ async function reactivateSession(sessionId){
   await sb.from('sessions').update({signed_out:false,sign_out_time:null,amount_paid:null,debt_after:null,debt_before:null}).eq('id',s.id);
 }
 
+// deletes a single sign-in record — used when someone wants to remove one row
+// (typo'd entry, test data, duplicate) without touching anything else. Doesn't
+// touch that customer's debt — the debt ledger is independent, so if they still
+// owe money it stays exactly as it was, just no longer tied to this particular
+// visit's row.
+async function deleteSessionRow(sessionId){
+  const s = sessions.find(x=>x.id===sessionId);
+  if(!s) return;
+  if(!confirm('Delete this record for '+s.name+'? This can\'t be undone.')) return;
+  sessions = sessions.filter(x=>x.id!==sessionId);
+  updateStats();
+  renderActiveCards();
+  renderRecent();
+  renderSessions();
+  renderDebtors();
+  renderCalendar();
+  await sb.from('sessions').delete().eq('id',sessionId);
+}
+
 // ── CALENDAR ──────────────────────────────────────────────────────────────────
 let calViewDate = new Date();
 let calSelectedDate = new Date();
@@ -2704,7 +2729,8 @@ function renderCalendar(){
     const count=sessions.filter(s=>sameDay(s.startTime,dateObj)).length;
     const isToday=sameDay(today.getTime(),dateObj);
     const isSelected=calSelectedDate && sameDay(calSelectedDate.getTime(),dateObj);
-    html+=`<div class="cal-day ${isToday?'today':''} ${isSelected?'selected':''}" onclick="calSelectDay(${y},${m},${d})">
+    const hasDebt=Object.keys(debtSince).some(idnum=>getDebt(idnum)>0.01 && sameDay(debtSince[idnum],dateObj));
+    html+=`<div class="cal-day ${isToday?'today':''} ${isSelected?'selected':''} ${hasDebt?'has-debt':''}" onclick="calSelectDay(${y},${m},${d})" ${hasDebt?'title="Someone went into debt on this day"':''}>
       <div class="cal-day-num">${d}</div>
       <div class="cal-day-count ${count===0?'empty-count':''}">${count}</div>
     </div>`;
@@ -3100,6 +3126,12 @@ function sessionRowHtml(s,num,mode){
   }else{
     action=`<button onclick="reactivateSession('${s.id}')" title="Signed out by mistake? Put them back to active." style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:var(--sans);">Reactivate</button>`;
   }
+  // delete this record entirely — Sessions/Recent tabs only, not the Debt tab
+  // (deleting there would just leave the debt behind with no context, so the
+  // owner should settle it or go delete the record from Sessions instead).
+  if(mode!=='debt'){
+    action=`<div style="display:flex;align-items:center;gap:5px;">${action}<button onclick="deleteSessionRow('${s.id}')" title="Delete this record" style="background:var(--surface2);border:1px solid var(--line2);color:var(--ink3);width:26px;height:26px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;"><i class="ti ti-trash"></i></button></div>`;
+  }
   let paidcell='<span style="color:var(--ink3);">—</span>';
   if(s.signedOut && s.amountPaid!=null){
     const methodTag=s.paymentMethod==='mpesa'
@@ -3110,6 +3142,9 @@ function sessionRowHtml(s,num,mode){
     const receiptTitle=s.mpesaReceipt?` title="Receipt: ${s.mpesaReceipt}"`:'';
     paidcell=`<span${receiptTitle} style="font-weight:600;color:var(--ink);font-family:var(--mono);font-size:12px;">${fmtPrice(s.amountPaid)}</span>${methodTag}`;
   }
+  const sinceCell=mode==='debt'
+    ?`<td data-label="Since">${debtSince[s.idnum.toLowerCase().trim()]?fmtDate(debtSince[s.idnum.toLowerCase().trim()]):'—'}</td>`
+    :'';
   return`<tr>
     <td class="td-num" data-label="#">${String(num).padStart(2,'0')}</td>
     <td class="td-name td-editable" data-label="Name" onclick="startEdit(this,'${s.id}','name')">${s.name}<span class="edit-hint">✎</span></td>
@@ -3121,6 +3156,7 @@ function sessionRowHtml(s,num,mode){
     <td data-label="Cost">${pricecell}</td>
     <td data-label="Paid">${paidcell}</td>
     <td data-label="Debt">${debtCellHtml(s.idnum)}</td>
+    ${sinceCell}
     <td data-label="Status">${badge}</td>
     <td data-label="">${action}</td>
   </tr>`;
@@ -3170,7 +3206,7 @@ function renderDebtors(){
   const db=document.getElementById('debt-badge');
   if(db){ db.textContent=entries.length; db.style.display=entries.length>0?'inline':'none'; }
   if(!entries.length){
-    tb.innerHTML='<tr class="empty-row"><td colspan="12">No customers with debt right now</td></tr>';
+    tb.innerHTML='<tr class="empty-row"><td colspan="13">No customers with debt right now</td></tr>';
     return;
   }
   entries.sort((a,b)=>debts[b]-debts[a]);
@@ -3192,6 +3228,7 @@ function renderDebtors(){
       <td data-label="In">—</td><td data-label="Out">—</td><td data-label="Time">—</td><td data-label="Cost">—</td>
       <td data-label="Paid">—</td>
       <td data-label="Debt">${debtCellHtml(idnum)}</td>
+      <td data-label="Since">${debtSince[idnum]?fmtDate(debtSince[idnum]):'—'}</td>
       <td data-label="Status"><span class="badge over">Debt</span></td>
       <td data-label=""><button onclick="settleDebtor('${idnum}')" style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:var(--sans);">Settle up</button></td>
     </tr>`;
