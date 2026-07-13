@@ -1147,6 +1147,12 @@ body.dark{
                 <option value="60">Round up to 1 hour</option>
               </select>
             </div>
+            <div class="fg" style="margin-bottom:14px;">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="whole-shillings-input" onchange="setWholeShillings(this.checked);updatePriceExample();updateTodayLiveTotal();renderDailyHistory();renderSessions();renderRecent();renderDebtors();"/>
+                <span>Round to whole shillings (no cents)</span>
+              </label>
+            </div>
             <div style="padding:10px 12px;background:var(--surface2);border-radius:8px;margin-bottom:14px;font-size:12px;color:var(--ink3);line-height:1.7;">
               Example: <span id="price-example" style="color:var(--green);font-weight:600;">—</span>
             </div>
@@ -1510,10 +1516,11 @@ function calcPrice(elapsedMs){
   }
   let price=(mins/60)*rate;
   if(minCharge>0&&price<minCharge)price=minCharge;
-  return Math.round(price*100)/100;
+  return getWholeShillings() ? Math.round(price) : Math.round(price*100)/100;
 }
 function fmtPrice(amount){
   if(amount==null)return'—';
+  if(getWholeShillings()) return'KSh '+Math.round(amount).toLocaleString('en-KE');
   return'KSh '+amount.toLocaleString('en-KE',{minimumFractionDigits:amount%1===0?0:2,maximumFractionDigits:2});
 }
 
@@ -1571,9 +1578,11 @@ function loadPricingFields(){
   const ri=document.getElementById('rate-input');
   const mi=document.getElementById('min-charge-input');
   const roi=document.getElementById('round-input');
+  const wsi=document.getElementById('whole-shillings-input');
   if(ri)ri.value=p.rate||'';
   if(mi)mi.value=p.minCharge||'';
   if(roi)roi.value=p.round;
+  if(wsi)wsi.checked=getWholeShillings();
   updatePriceExample();
 }
 
@@ -1585,6 +1594,11 @@ function dateKeyOf(ts){
 function todayKey(){return dateKeyOf(Date.now());}
 function getDailyTotals(){return dailyTotals;}
 function getResetMode(){return localStorage.getItem('lm_daily_reset_mode')||'keep';}
+// whole-shilling rounding — a per-device display/billing preference, same pattern
+// as reset mode above. When on, every price calc rounds to the nearest whole
+// KSh instead of tracking cents.
+function getWholeShillings(){return localStorage.getItem('lm_whole_shillings')==='1';}
+function setWholeShillings(on){localStorage.setItem('lm_whole_shillings',on?'1':'0');}
 
 // Revenue + customer count for sessions that STARTED on the given date.
 function computeDayStats(dateKey){
@@ -1595,7 +1609,7 @@ function computeDayStats(dateKey){
     const price=calcPrice(elapsed);
     if(price)revenue+=price;
   });
-  return{revenue:Math.round(revenue*100)/100,customers:daySessions.length};
+  return{revenue:getWholeShillings()?Math.round(revenue):Math.round(revenue*100)/100,customers:daySessions.length};
 }
 
 async function finalizeDay(dateKey){
