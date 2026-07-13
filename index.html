@@ -965,13 +965,14 @@ body.dark{
                   <th style="width:96px;">Out</th>
                                     <th style="width:110px;">Time</th>
                   <th style="width:95px;">Cost</th>
+                  <th style="width:95px;">Paid</th>
                   <th style="width:95px;">Debt</th>
                   <th style="width:100px;">Status</th>
                   <th style="width:95px;">Action</th>
                 </tr>
               </thead>
               <tbody id="recent-tb">
-                <tr class="empty-row"><td colspan="11">No sign-ins yet</td></tr>
+                <tr class="empty-row"><td colspan="12">No sign-ins yet</td></tr>
               </tbody>
             </table>
             </div>
@@ -1007,13 +1008,14 @@ body.dark{
               <th style="width:96px;">Out</th>
                             <th style="width:110px;">Time</th>
               <th style="width:95px;">Cost</th>
+              <th style="width:95px;">Paid</th>
               <th style="width:95px;">Debt</th>
               <th style="width:100px;">Status</th>
               <th style="width:95px;">Action</th>
             </tr>
           </thead>
           <tbody id="sessions-tb">
-            <tr class="empty-row"><td colspan="11">No sessions yet</td></tr>
+            <tr class="empty-row"><td colspan="12">No sessions yet</td></tr>
           </tbody>
         </table>
         </div>
@@ -1044,13 +1046,14 @@ body.dark{
               <th style="width:96px;">Out</th>
                             <th style="width:110px;">Time</th>
               <th style="width:95px;">Cost</th>
+              <th style="width:95px;">Paid</th>
               <th style="width:95px;">Debt</th>
               <th style="width:100px;">Status</th>
               <th style="width:95px;">Action</th>
             </tr>
           </thead>
           <tbody id="debt-tb">
-            <tr class="empty-row"><td colspan="11">No customers with debt right now</td></tr>
+            <tr class="empty-row"><td colspan="12">No customers with debt right now</td></tr>
           </tbody>
         </table>
         </div>
@@ -1435,6 +1438,8 @@ function dbRowToSession(row){
     signedOut: row.signed_out,
     signOutTime: row.sign_out_time ? new Date(row.sign_out_time).getTime() : null,
     amountPaid: row.amount_paid,
+    paymentMethod: row.payment_method || null,
+    mpesaReceipt: row.mpesa_receipt || null,
     debtAfter: row.debt_after,
     debtBefore: row.debt_before,
   };
@@ -2146,13 +2151,15 @@ async function finishSignOut(existing,signOutTime,paid,debtBefore,debtAfter){
   beep(1046,0.2);
 
   existing.amountPaid=paid;
+  existing.paymentMethod=paid!=null?'cash':null;
   existing.debtBefore=debtBefore;
   existing.debtAfter=debtAfter;
   if(debtAfter!=null) await setDebtFor(existing.idnum,debtAfter);
 
   await sb.from('sessions').update({
     signed_out:true, sign_out_time:new Date(signOutTime).toISOString(),
-    amount_paid:existing.amountPaid, debt_after:existing.debtAfter, debt_before:existing.debtBefore
+    amount_paid:existing.amountPaid, payment_method:existing.paymentMethod,
+    debt_after:existing.debtAfter, debt_before:existing.debtBefore
   }).eq('id',existing.id);
 
   if(overtime>0){
@@ -2293,9 +2300,9 @@ function watchMpesaTransaction(checkoutRequestId){
       clearInterval(mpesaPollTimer);
       document.getElementById('pm-waiting-text').textContent='Payment was not completed (cancelled, wrong PIN, or timed out).';
       document.getElementById('pm-waiting-retry').style.display='block';
-    }else if(elapsed>90000){
+    }else if(elapsed>180000){
       clearInterval(mpesaPollTimer);
-      document.getElementById('pm-waiting-text').textContent='Still no response after 90 seconds — they may not have seen the prompt.';
+      document.getElementById('pm-waiting-text').textContent='Still no response after 3 minutes — they may not have seen the prompt.';
       document.getElementById('pm-waiting-retry').style.display='block';
     }
   },3000);
@@ -2498,6 +2505,17 @@ function switchView(v){
   // it'd just be clutter sitting above Sessions/Calendar/Settings
   const sbEl=document.querySelector('.sb');
   if(sbEl) sbEl.classList.toggle('sb-hide-mobile', v!=='signin');
+  // ...and actually STOP the camera stream while away from it, not just hide it —
+  // a running getUserMedia stream keeps decoding video in the background even
+  // when display:none, which is a heavy, continuous drain on a phone's CPU/GPU
+  // and was causing app-wide scroll lag on every other page.
+  if(window.matchMedia('(max-width:900px)').matches){
+    if(v!=='signin'){
+      pauseMobileCamera();
+    }else if(cameraEnabled && !mainStream){
+      startMainScanner();
+    }
+  }
   const titles={signin:'Sign in',sessions:'Sessions',debt:'Debt',calendar:'Calendar',settings:'Settings'};
   document.getElementById('view-title').textContent=titles[v];
   if(v==='sessions')renderSessions();
@@ -2531,6 +2549,19 @@ function toggleCameraEnabled(){
     statusText.textContent = 'Camera is disabled — manual mode only';
     stopMainScanner();
   }
+}
+
+// Lightweight pause used when navigating away from Sign in on mobile — stops
+// the camera hardware/stream (the actual expensive part) without touching the
+// pill/banner text, since those belong to the Sign-in view specifically and
+// this isn't the user deliberately turning the camera off in Settings.
+function pauseMobileCamera(){
+  if(mainStream){
+    mainStream.getTracks().forEach(t=>t.stop());
+    mainStream=null;
+  }
+  const v=document.getElementById('main-vid');
+  if(v) v.srcObject=null;
 }
 
 function stopMainScanner(){
@@ -2908,7 +2939,7 @@ function renderRecent(){
   const tb=document.getElementById('recent-tb');
   if(tb){
     if(!sessions.length){
-      tb.innerHTML='<tr class="empty-row"><td colspan="11">No sign-ins yet</td></tr>';
+      tb.innerHTML='<tr class="empty-row"><td colspan="12">No sign-ins yet</td></tr>';
     }else{
       const recent=sessions.slice(0,8);
       tb.innerHTML=recent.map((s,i)=>sessionRowHtml(s,i+1)).join('');
@@ -2943,10 +2974,10 @@ function filterTable(tbodyId,query){
     if(!emptyRow){
       emptyRow=document.createElement('tr');
       emptyRow.className='empty-row search-empty';
-      emptyRow.innerHTML='<td colspan="11">No results for "'+query.trim()+'"</td>';
+      emptyRow.innerHTML='<td colspan="12">No results for "'+query.trim()+'"</td>';
       document.getElementById(tbodyId).appendChild(emptyRow);
     }else{
-      emptyRow.innerHTML='<td colspan="11">No results for "'+query.trim()+'"</td>';
+      emptyRow.innerHTML='<td colspan="12">No results for "'+query.trim()+'"</td>';
       emptyRow.style.display='';
     }
   }else if(emptyRow){
@@ -2963,7 +2994,7 @@ function sessionRowHtml(s,num,mode){
     outcell=fmtTime(s.signOutTime);
   }else{
     elapsedMs=now-s.startTime;
-    timecell=`<span class="td-timer g">${fmtMs(elapsedMs)}</span>`;
+    timecell=`<span class="td-timer g live-timer" data-start="${s.startTime}">${fmtMs(elapsedMs)}</span>`;
     badge='<span class="badge active">Active</span>';
     outcell='—';
   }
@@ -2979,6 +3010,16 @@ function sessionRowHtml(s,num,mode){
   }else{
     action=`<button onclick="reactivateSession('${s.id}')" title="Signed out by mistake? Put them back to active." style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:var(--sans);">Reactivate</button>`;
   }
+  let paidcell='<span style="color:var(--ink3);">—</span>';
+  if(s.signedOut && s.amountPaid!=null){
+    const methodTag=s.paymentMethod==='mpesa'
+      ?`<span style="font-size:9px;font-weight:700;color:#16a34a;background:#dcfce7;padding:1px 5px;border-radius:5px;margin-left:5px;">M-PESA</span>`
+      :s.paymentMethod==='cash'
+      ?`<span style="font-size:9px;font-weight:700;color:var(--ink3);background:var(--surface3);padding:1px 5px;border-radius:5px;margin-left:5px;">CASH</span>`
+      :'';
+    const receiptTitle=s.mpesaReceipt?` title="Receipt: ${s.mpesaReceipt}"`:'';
+    paidcell=`<span${receiptTitle} style="font-weight:600;color:var(--ink);font-family:var(--mono);font-size:12px;">${fmtPrice(s.amountPaid)}</span>${methodTag}`;
+  }
   return`<tr>
     <td class="td-num" data-label="#">${String(num).padStart(2,'0')}</td>
     <td class="td-name td-editable" data-label="Name" onclick="startEdit(this,'${s.id}','name')">${s.name}<span class="edit-hint">✎</span></td>
@@ -2988,6 +3029,7 @@ function sessionRowHtml(s,num,mode){
     <td data-label="Out">${outcell}</td>
     <td data-label="Time">${timecell}</td>
     <td data-label="Cost">${pricecell}</td>
+    <td data-label="Paid">${paidcell}</td>
     <td data-label="Debt">${debtCellHtml(s.idnum)}</td>
     <td data-label="Status">${badge}</td>
     <td data-label="">${action}</td>
@@ -3038,7 +3080,7 @@ function renderDebtors(){
   const db=document.getElementById('debt-badge');
   if(db){ db.textContent=entries.length; db.style.display=entries.length>0?'inline':'none'; }
   if(!entries.length){
-    tb.innerHTML='<tr class="empty-row"><td colspan="11">No customers with debt right now</td></tr>';
+    tb.innerHTML='<tr class="empty-row"><td colspan="12">No customers with debt right now</td></tr>';
     return;
   }
   entries.sort((a,b)=>debts[b]-debts[a]);
@@ -3074,7 +3116,7 @@ function settleDebtor(idnum){
 
 function renderSessions(){
   const tb=document.getElementById('sessions-tb');
-  if(!sessions.length){tb.innerHTML='<tr class="empty-row"><td colspan="11">No sessions yet</td></tr>';return;}
+  if(!sessions.length){tb.innerHTML='<tr class="empty-row"><td colspan="12">No sessions yet</td></tr>';return;}
   tb.innerHTML=sessions.map((s,i)=>sessionRowHtml(s,i+1)).join('');
   const q=document.getElementById('search-sessions');
   if(q&&q.value.trim()) filterTable('sessions-tb',q.value);
@@ -3084,16 +3126,24 @@ async function clearAll(){
   sessions=[];updateStats();renderSessions();renderRecent();
   await sb.from('sessions').delete().eq('owner_id',currentUserId);
 }
+// Updates just the ticking timer text for active sessions, in place — no
+// rebuilding rows/tables. This runs every second; a full re-render every
+// second was the main cause of phone-only lag (rebuilding a whole table's
+// DOM 60x/minute is cheap on a laptop, very expensive on real phone hardware).
+function tickLiveTimers(){
+  document.querySelectorAll('.live-timer').forEach(el=>{
+    const start=parseInt(el.dataset.start,10);
+    if(!start)return;
+    el.textContent=fmtMs(Date.now()-start);
+  });
+}
+
 setInterval(()=>{
   updateStats();
   renderActiveCards();
   checkDailyRollover();
   updateTodayLiveTotal();
-  const isEditing=document.querySelector('.cell-input');
-  if(isEditing) return;
-  if(curView==='sessions') renderSessions();
-  else if(curView==='signin') renderRecent();
-  if(curView==='calendar') renderCalendar();
+  tickLiveTimers();
 },1000);
 
 // ── auto-start on load ────────────────────────────────────────────────────────
@@ -3147,6 +3197,7 @@ async function doLogin(){
 async function launchDashboard(name){
   document.getElementById('auth-wrap').style.display='none';
   document.getElementById('dashboard').style.display='block';
+  if(window.stopBikeCanvas) window.stopBikeCanvas();
   const ownerEl=document.getElementById('owner-name');
   if(ownerEl) ownerEl.textContent=name;
   const avEl=document.getElementById('owner-av');
@@ -3188,6 +3239,7 @@ async function doLogout(){
   currentUserId=null;
   document.getElementById('dashboard').style.display='none';
   document.getElementById('auth-wrap').style.display='grid';
+  if(window.startBikeCanvas) window.startBikeCanvas();
   showLogin();
 }
 
@@ -3236,6 +3288,16 @@ window.addEventListener('load',async ()=>{
 })();
 
 // ── BIKE CANVAS ANIMATION ────────────────────────────────────────────────────
+// This is a purely decorative loop for the login screen. Left unchecked it runs
+// requestAnimationFrame forever (heavy shadowBlur draws, every ~16ms) even after
+// auth-wrap is hidden post-login — a permanent background CPU/GPU hog that was
+// the real source of the app-wide lag while typing/clicking/scrolling. We expose
+// window.stopBikeCanvas() and call it the moment the dashboard launches.
+let bikeAnimStopped=false;
+window.stopBikeCanvas=function(){ bikeAnimStopped=true; };
+window.startBikeCanvas=function(){
+  if(bikeAnimStopped && window._bikeFrameFn){ bikeAnimStopped=false; window._bikeFrameFn(); }
+};
 (function(){
   const canvas=document.getElementById('bike-canvas');
   if(!canvas)return;
@@ -3479,8 +3541,9 @@ window.addEventListener('load',async ()=>{
     bf.addColorStop(1,'rgba(5,12,7,.7)');
     ctx.fillStyle=bf; ctx.fillRect(0,H*.8,W,H*.2);
 
-    requestAnimationFrame(frame);
+    if(!bikeAnimStopped) requestAnimationFrame(frame);
   }
+  window._bikeFrameFn=frame;
   frame();
 })();
 (function(){
