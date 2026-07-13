@@ -3020,7 +3020,9 @@ function sessionRowHtml(s,num,mode){
   const price=calcPrice(elapsedMs);
   const pricecell=price==null
     ?'<span style="color:var(--ink3);">—</span>'
-    :`<span style="font-weight:600;color:${s.signedOut?'var(--green)':'var(--ink2)'};font-family:var(--mono);font-size:12px;">${fmtPrice(price)}</span>`;
+    :s.signedOut
+      ?`<span style="font-weight:600;color:var(--green);font-family:var(--mono);font-size:12px;">${fmtPrice(price)}</span>`
+      :`<span class="live-cost" data-start="${s.startTime}" style="font-weight:600;color:var(--ink2);font-family:var(--mono);font-size:12px;">${fmtPrice(price)}</span>`;
   let action='';
   if(mode==='debt'){
     action=`<button onclick="settleDebtor('${s.idnum}')" style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:var(--sans);">Settle up</button>`;
@@ -3154,6 +3156,12 @@ function tickLiveTimers(){
     const start=parseInt(el.dataset.start,10);
     if(!start)return;
     el.textContent=fmtMs(Date.now()-start);
+  });
+  document.querySelectorAll('.live-cost').forEach(el=>{
+    const start=parseInt(el.dataset.start,10);
+    if(!start)return;
+    const price=calcPrice(Date.now()-start);
+    if(price!=null) el.textContent=fmtPrice(price);
   });
 }
 
