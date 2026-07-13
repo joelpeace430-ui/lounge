@@ -3197,7 +3197,6 @@ async function doLogin(){
 async function launchDashboard(name){
   document.getElementById('auth-wrap').style.display='none';
   document.getElementById('dashboard').style.display='block';
-  if(window.stopBikeCanvas) window.stopBikeCanvas();
   const ownerEl=document.getElementById('owner-name');
   if(ownerEl) ownerEl.textContent=name;
   const avEl=document.getElementById('owner-av');
@@ -3239,7 +3238,6 @@ async function doLogout(){
   currentUserId=null;
   document.getElementById('dashboard').style.display='none';
   document.getElementById('auth-wrap').style.display='grid';
-  if(window.startBikeCanvas) window.startBikeCanvas();
   showLogin();
 }
 
@@ -3288,16 +3286,6 @@ window.addEventListener('load',async ()=>{
 })();
 
 // ── BIKE CANVAS ANIMATION ────────────────────────────────────────────────────
-// This is a purely decorative loop for the login screen. Left unchecked it runs
-// requestAnimationFrame forever (heavy shadowBlur draws, every ~16ms) even after
-// auth-wrap is hidden post-login — a permanent background CPU/GPU hog that was
-// the real source of the app-wide lag while typing/clicking/scrolling. We expose
-// window.stopBikeCanvas() and call it the moment the dashboard launches.
-let bikeAnimStopped=false;
-window.stopBikeCanvas=function(){ bikeAnimStopped=true; };
-window.startBikeCanvas=function(){
-  if(bikeAnimStopped && window._bikeFrameFn){ bikeAnimStopped=false; window._bikeFrameFn(); }
-};
 (function(){
   const canvas=document.getElementById('bike-canvas');
   if(!canvas)return;
@@ -3541,9 +3529,8 @@ window.startBikeCanvas=function(){
     bf.addColorStop(1,'rgba(5,12,7,.7)');
     ctx.fillStyle=bf; ctx.fillRect(0,H*.8,W,H*.2);
 
-    if(!bikeAnimStopped) requestAnimationFrame(frame);
+    requestAnimationFrame(frame);
   }
-  window._bikeFrameFn=frame;
   frame();
 })();
 (function(){
