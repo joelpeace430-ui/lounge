@@ -3197,6 +3197,7 @@ async function doLogin(){
 async function launchDashboard(name){
   document.getElementById('auth-wrap').style.display='none';
   document.getElementById('dashboard').style.display='block';
+  if(window.stopBikeCanvas) window.stopBikeCanvas();
   const ownerEl=document.getElementById('owner-name');
   if(ownerEl) ownerEl.textContent=name;
   const avEl=document.getElementById('owner-av');
@@ -3238,6 +3239,7 @@ async function doLogout(){
   currentUserId=null;
   document.getElementById('dashboard').style.display='none';
   document.getElementById('auth-wrap').style.display='grid';
+  if(window.startBikeCanvas) window.startBikeCanvas();
   showLogin();
 }
 
@@ -3286,7 +3288,22 @@ window.addEventListener('load',async ()=>{
 })();
 
 // ── BIKE CANVAS ANIMATION ────────────────────────────────────────────────────
+// This is a purely decorative loop for the login screen. Left unchecked it runs
+// requestAnimationFrame forever (heavy shadowBlur draws, every ~16ms) even after
+// auth-wrap is hidden post-login — a permanent background CPU/GPU hog that was
+// the real source of the app-wide lag while typing/clicking/scrolling. We expose
+// window.stopBikeCanvas() and call it the moment the dashboard launches.
+// It also never runs at all on mobile — CSS already hides .auth-left (which
+// holds the canvas) under 768px, so on phones/tablets this is pure wasted
+// CPU/GPU with nothing on screen to show for it. Desktop/laptop view only.
+let bikeAnimStopped=false;
+window.stopBikeCanvas=function(){ bikeAnimStopped=true; };
+window.startBikeCanvas=function(){
+  if(window.matchMedia('(max-width:768px)').matches) return; // stays off on mobile
+  if(bikeAnimStopped && window._bikeFrameFn){ bikeAnimStopped=false; window._bikeFrameFn(); }
+};
 (function(){
+  if(window.matchMedia('(max-width:768px)').matches) return; // mobile: never start it
   const canvas=document.getElementById('bike-canvas');
   if(!canvas)return;
   const ctx=canvas.getContext('2d');
@@ -3298,6 +3315,9 @@ window.addEventListener('load',async ()=>{
   }
   resize();
   window.addEventListener('resize',resize);
+  window.addEventListener('resize',()=>{
+    if(window.matchMedia('(max-width:768px)').matches) bikeAnimStopped=true;
+  });
 
   // ── draw bike silhouette with neon glow ──────────────────────────────────
   function drawBike(x,y,sz,alpha,color){
@@ -3529,8 +3549,9 @@ window.addEventListener('load',async ()=>{
     bf.addColorStop(1,'rgba(5,12,7,.7)');
     ctx.fillStyle=bf; ctx.fillRect(0,H*.8,W,H*.2);
 
-    requestAnimationFrame(frame);
+    if(!bikeAnimStopped) requestAnimationFrame(frame);
   }
+  window._bikeFrameFn=frame;
   frame();
 })();
 (function(){
