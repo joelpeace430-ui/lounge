@@ -1478,7 +1478,11 @@ async function loadAllData(displayName){
   }
   sessions = (sessRows||[]).map(dbRowToSession);
   debts = {};
-  (debtRows||[]).forEach(r=>{ debts[r.idnum] = r.amount; });
+  debtSince = {};
+  (debtRows||[]).forEach(r=>{
+    debts[r.idnum] = r.amount;
+    debtSince[r.idnum] = r.since ? new Date(r.since).getTime() : Date.now();
+  });
   customerDirectory = {};
   (custRows||[]).forEach(r=>{ customerDirectory[r.idnum] = { name:r.name, phone:r.phone }; });
   dailyTotals = {};
@@ -1499,9 +1503,14 @@ function subscribeRealtime(){
       updateStats();renderSessions();renderRecent();renderActiveCards();
     })
     .on('postgres_changes', {event:'*',schema:'public',table:'debts',filter:'owner_id=eq.'+currentUserId}, payload=>{
-      if(payload.eventType==='DELETE'){ delete debts[payload.old.idnum]; }
-      else { debts[payload.new.idnum] = payload.new.amount; }
-      renderSessions();renderRecent();renderDebtors();
+      if(payload.eventType==='DELETE'){
+        delete debts[payload.old.idnum];
+        delete debtSince[payload.old.idnum];
+      } else {
+        debts[payload.new.idnum] = payload.new.amount;
+        debtSince[payload.new.idnum] = payload.new.since ? new Date(payload.new.since).getTime() : (debtSince[payload.new.idnum]||Date.now());
+      }
+      renderSessions();renderRecent();renderDebtors();renderCalDayList();
     })
     .subscribe();
 }
@@ -1534,6 +1543,11 @@ function fmtPrice(amount){
 // (and across every device, via Supabase) so if they come back next week
 // still owing money, it shows up automatically.
 let debts={};
+// when each current debt first appeared — keyed the same way as debts (lowercased
+// idnum). Cleared the moment the debt is paid off. Synced via the debts.since
+// column in Supabase, so it's consistent across every device/till, not just
+// this browser.
+let debtSince={};
 function getDebt(idnum){
   if(!idnum)return 0;
   return debts[idnum.toLowerCase().trim()]||0;
@@ -1544,10 +1558,20 @@ async function setDebtFor(idnum,amount){
   const rounded=Math.round(amount*100)/100;
   if(Math.abs(rounded)<0.01){
     delete debts[key];
+    delete debtSince[key];
     await sb.from('debts').delete().eq('owner_id',currentUserId).eq('idnum',key);
   }else{
+    const isNewDebt=!debts[key]; // wasn't already in debt — this is a fresh start date
     debts[key]=rounded;
-    await sb.from('debts').upsert({owner_id:currentUserId,idnum:key,amount:rounded,updated_at:new Date().toISOString()});
+    const payload={owner_id:currentUserId,idnum:key,amount:rounded,updated_at:new Date().toISOString()};
+    if(isNewDebt){
+      const since=new Date().toISOString();
+      debtSince[key]=Date.parse(since);
+      payload.since=since; // only included on a fresh debt — an upsert that omits
+                            // this column leaves the existing 'since' untouched,
+                            // so an ongoing debt's original date never resets
+    }
+    await sb.from('debts').upsert(payload);
   }
 }
 function debtCellHtml(idnum){
@@ -2702,26 +2726,59 @@ function renderCalDayList(){
   label.textContent=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
 
   const daySessions=sessions.filter(s=>sameDay(s.startTime,d));
+  let sessionsHtml;
   if(!daySessions.length){
-    list.innerHTML='<p style="font-size:13px;color:var(--ink3);">No sessions on this day.</p>';
-    return;
+    sessionsHtml='<p style="font-size:13px;color:var(--ink3);">No sessions on this day.</p>';
+  }else{
+    sessionsHtml=daySessions.map(s=>{
+      let meta;
+      if(s.signedOut){
+        const el=s.signOutTime-s.startTime, ov=s.durationMs?(el-s.durationMs):-1;
+        meta=`${fmtTime(s.startTime)} → ${fmtTime(s.signOutTime)} · ${fmtMs(el)}${ov>0?' <span style="color:var(--red);font-weight:600;">+'+fmtMs(ov)+' OT</span>':''}`;
+      }else{
+        meta=`${fmtTime(s.startTime)} · booked ${s.hours}h · still active`;
+      }
+      // red = currently owes money (unless it's been cleared, in which case this
+      // doesn't apply); green = still signed in / active right now. Debt takes
+      // priority since it's the more urgent flag if somehow both are true.
+      const owes=getDebt(s.idnum)>0.01;
+      const nameColor=owes?'var(--red)':(!s.signedOut?'var(--green)':'inherit');
+      return `<div class="cal-list-item">
+        <span class="avatar" style="width:26px;height:26px;font-size:10px;margin-right:0;">${initials(s.name)}</span>
+        <div class="cal-list-info">
+          <div class="cal-list-name" style="color:${nameColor};">${s.name}${owes?' <span style="font-size:10px;font-weight:700;">(owes '+fmtPrice(getDebt(s.idnum))+')</span>':''}</div>
+          <div class="cal-list-meta">${meta}</div>
+        </div>
+      </div>`;
+    }).join('');
   }
-  list.innerHTML=daySessions.map(s=>{
-    let meta;
-    if(s.signedOut){
-      const el=s.signOutTime-s.startTime, ov=s.durationMs?(el-s.durationMs):-1;
-      meta=`${fmtTime(s.startTime)} → ${fmtTime(s.signOutTime)} · ${fmtMs(el)}${ov>0?' <span style="color:var(--red);font-weight:600;">+'+fmtMs(ov)+' OT</span>':''}`;
-    }else{
-      meta=`${fmtTime(s.startTime)} · booked ${s.hours}h · still active`;
-    }
-    return `<div class="cal-list-item">
-      <span class="avatar" style="width:26px;height:26px;font-size:10px;margin-right:0;">${initials(s.name)}</span>
-      <div class="cal-list-info">
-        <div class="cal-list-name">${s.name}</div>
-        <div class="cal-list-meta">${meta}</div>
-      </div>
+
+  // separate section: anyone whose debt started on this exact day and is still
+  // unpaid — this can include people whose session started on a different day
+  // (e.g. debt only got flagged at a later sign-out) so it's not limited to
+  // whatever's in the sessions list above.
+  const debtorsSince=Object.keys(debtSince).filter(idnum=>
+    getDebt(idnum)>0.01 && sameDay(debtSince[idnum],d)
+  );
+  let debtorsHtml='';
+  if(debtorsSince.length){
+    debtorsHtml=`<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line);">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--red);margin-bottom:8px;">In debt since this day</div>
+      ${debtorsSince.map(idnum=>{
+        const person=customerDirectory[idnum]||{};
+        const nm=person.name||idnum;
+        return `<div class="cal-list-item">
+          <span class="avatar" style="width:26px;height:26px;font-size:10px;margin-right:0;">${initials(nm)}</span>
+          <div class="cal-list-info">
+            <div class="cal-list-name" style="color:var(--red);">${nm} <span style="font-size:10px;font-weight:700;">(owes ${fmtPrice(getDebt(idnum))})</span></div>
+            <div class="cal-list-meta">Still unpaid</div>
+          </div>
+        </div>`;
+      }).join('')}
     </div>`;
-  }).join('');
+  }
+
+  list.innerHTML=sessionsHtml+debtorsHtml;
 }
 
 // ── LIVE SIMULATION ──────────────────────────────────────────────────────────
