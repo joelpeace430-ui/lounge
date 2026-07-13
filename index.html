@@ -3186,6 +3186,7 @@ function renderDebtors(){
       <td class="td-id" data-label="ID number">${idnum}</td>
       <td class="td-id" data-label="Phone">${info.phone||'—'}</td>
       <td data-label="In">—</td><td data-label="Out">—</td><td data-label="Time">—</td><td data-label="Cost">—</td>
+      <td data-label="Paid">—</td>
       <td data-label="Debt">${debtCellHtml(idnum)}</td>
       <td data-label="Status"><span class="badge out">—</span></td>
       <td data-label=""><button onclick="settleDebtor('${idnum}')" style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:var(--sans);">Settle up</button></td>
