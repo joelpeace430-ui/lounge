@@ -484,6 +484,10 @@ body.dark .td-id{color:#e2e8f0;}
   .mnav-item:active{background:var(--surface2);}
   .mnav-item.on{background:var(--green-bg);color:var(--green);}
   .mnav-item.on i{opacity:1;color:var(--green);}
+  .mnav-divider{height:1px;background:var(--line);margin:6px 10px;}
+  .mnav-signout{color:var(--red);}
+  .mnav-signout i{opacity:1;color:var(--red);}
+  .mnav-signout:active{background:var(--red-bg);}
   .mnav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;
     border-radius:20px;padding:1px 7px;min-width:16px;text-align:center;}
   .mnav-scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:70;
@@ -869,6 +873,10 @@ body.dark{
     <button class="mnav-item" id="mnav-settings" onclick="switchView('settings')">
       <i class="ti ti-settings"></i><span>Settings</span>
     </button>
+    <div class="mnav-divider"></div>
+    <button class="mnav-item mnav-signout" onclick="closeMobileNavMenu();doLogout()">
+      <i class="ti ti-logout"></i><span>Sign out</span>
+    </button>
   </div>
   <div class="mnav-scrim" id="mnav-scrim" onclick="closeMobileNavMenu()"></div>
 
@@ -1186,6 +1194,7 @@ body.dark{
               Get them from <span style="color:var(--ink2);">developer.safaricom.co.ke</span> after your
               Go Live application is approved. Only you can see these values.
             </p>
+            <button class="btn-cl" onclick="fillSandboxTestValues()" style="margin-bottom:16px;"><i class="ti ti-flask"></i> Fill sandbox test values</button>
             <div class="fg" style="margin-bottom:14px;">
               <label>Environment</label>
               <select id="mpesa-env-input" style="width:100%;padding:8px 11px;background:var(--surface2);border:1px solid var(--line2);border-radius:8px;color:var(--ink);font-size:13px;font-family:var(--sans);outline:none;">
@@ -1657,6 +1666,39 @@ function loadMpesaFields(){
   if(csI)csI.value=profileCache.mpesaConsumerSecret||'';
   if(pkI)pkI.value=profileCache.mpesaPasskey||'';
 }
+// Pulls whatever MPESA_* sandbox values are already set as Vercel env vars
+// (Consumer Key/Secret included, if you've set those there) — so you don't
+// have to retype anything you've already configured. Falls back to
+// Safaricom's public sandbox Till/passkey for whichever fields aren't set.
+async function fillSandboxTestValues(){
+  const btn=event?.target?.closest('button');
+  if(btn){btn.disabled=true;btn.textContent='Loading...';}
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session){ alert('Please log in again.'); return; }
+    const res=await fetch('/api/mpesa?action=sandbox-defaults',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({accessToken:session.access_token})
+    });
+    const d=await res.json();
+    if(!res.ok){ alert(d.error||'Could not load sandbox values'); return; }
+    document.getElementById('mpesa-env-input').value='sandbox';
+    document.getElementById('mpesa-shortcode-input').value=d.shortcode;
+    document.getElementById('mpesa-passkey-input').value=d.passkey;
+    document.getElementById('mpesa-consumer-key-input').value=d.consumerKey;
+    document.getElementById('mpesa-consumer-secret-input').value=d.consumerSecret;
+    if(d.consumerKey && d.consumerSecret){
+      alert('Filled in everything from your Vercel env vars. Hit Save to finish.');
+    }else{
+      alert('Filled in the public sandbox Till and Passkey. Your Vercel env vars don\u2019t have a Consumer Key/Secret set, so paste those in from your Daraja sandbox app, then Save.');
+    }
+  }catch(e){
+    alert('Could not load sandbox values: '+e.message);
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-flask"></i> Fill sandbox test values';}
+  }
+}
 async function saveMpesaSettings(){
   const env=document.getElementById('mpesa-env-input').value||'sandbox';
   const shortcode=document.getElementById('mpesa-shortcode-input').value.trim();
@@ -1689,7 +1731,7 @@ function getResetMode(){return localStorage.getItem('lm_daily_reset_mode')||'kee
 // whole-shilling rounding — a per-device display/billing preference, same pattern
 // as reset mode above. When on, every price calc rounds to the nearest whole
 // KSh instead of tracking cents.
-function getWholeShillings(){return localStorage.getItem('lm_whole_shillings')==='1';}
+function getWholeShillings(){return localStorage.getItem('lm_whole_shillings')!=='0';}
 function setWholeShillings(on){localStorage.setItem('lm_whole_shillings',on?'1':'0');}
 
 // Revenue + customer count for sessions that STARTED on the given date — plus,
