@@ -1185,39 +1185,57 @@ body.dark{
           <div class="panel-head">
             <div class="panel-head-left">
               <div class="panel-icon"><i class="ti ti-brand-android"></i></div>
-              <div><div class="panel-title">M-Pesa</div><div class="panel-sub">Your own till/paybill for STK push payments</div></div>
+              <div><div class="panel-title">M-Pesa</div><div class="panel-sub">STK push payments</div></div>
             </div>
           </div>
           <div class="panel-body">
-            <p style="font-size:12px;color:var(--ink3);line-height:1.7;margin-bottom:14px;">
-              These are YOUR own Daraja credentials from Safaricom — not shared with anyone else.
-              Get them from <span style="color:var(--ink2);">developer.safaricom.co.ke</span> after your
-              Go Live application is approved. Only you can see these values.
-            </p>
-            <button class="btn-cl" onclick="fillSandboxTestValues()" style="margin-bottom:16px;"><i class="ti ti-flask"></i> Fill sandbox test values</button>
             <div class="fg" style="margin-bottom:14px;">
               <label>Environment</label>
-              <select id="mpesa-env-input" style="width:100%;padding:8px 11px;background:var(--surface2);border:1px solid var(--line2);border-radius:8px;color:var(--ink);font-size:13px;font-family:var(--sans);outline:none;">
+              <select id="mpesa-env-input" onchange="onMpesaEnvChange()" style="width:100%;padding:8px 11px;background:var(--surface2);border:1px solid var(--line2);border-radius:8px;color:var(--ink);font-size:13px;font-family:var(--sans);outline:none;">
                 <option value="sandbox">Sandbox (testing)</option>
                 <option value="production">Production (real payments)</option>
               </select>
             </div>
-            <div class="fg" style="margin-bottom:14px;">
-              <label>Till / Paybill number</label>
-              <input type="text" id="mpesa-shortcode-input" placeholder="e.g. 174379"/>
+
+            <!-- SANDBOX: nothing to see or set — works automatically -->
+            <div id="mpesa-sandbox-panel">
+              <div style="padding:12px 14px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:9px;color:var(--green);font-size:12px;line-height:1.6;">
+                <i class="ti ti-check" style="margin-right:6px;"></i>Sandbox is ready to test — no setup needed. Payments won't move real money.
+              </div>
             </div>
-            <div class="fg" style="margin-bottom:14px;">
-              <label>Consumer Key</label>
-              <input type="password" id="mpesa-consumer-key-input" placeholder="From your Daraja app" autocomplete="off"/>
+
+            <!-- PRODUCTION: owner's own real credentials, entered manually, never shown again after saving -->
+            <div id="mpesa-production-panel" style="display:none;">
+              <p style="font-size:12px;color:var(--ink3);line-height:1.7;margin-bottom:14px;">
+                These are YOUR own Daraja credentials from Safaricom — encrypted before they're
+                stored, and never shown again once saved. Get them from
+                <span style="color:var(--ink2);">developer.safaricom.co.ke</span> after your Go Live
+                application is approved.
+              </p>
+              <div class="fg" style="margin-bottom:14px;">
+                <label>Till / Paybill number</label>
+                <input type="text" id="mpesa-shortcode-input" placeholder="e.g. 174379"/>
+              </div>
+              <div id="mpesa-cred-fields">
+                <div class="fg" style="margin-bottom:14px;">
+                  <label>Consumer Key</label>
+                  <input type="password" id="mpesa-consumer-key-input" placeholder="From your Daraja app" autocomplete="off"/>
+                </div>
+                <div class="fg" style="margin-bottom:14px;">
+                  <label>Consumer Secret</label>
+                  <input type="password" id="mpesa-consumer-secret-input" placeholder="From your Daraja app" autocomplete="off"/>
+                </div>
+                <div class="fg" style="margin-bottom:14px;">
+                  <label>Passkey</label>
+                  <input type="password" id="mpesa-passkey-input" placeholder="From your Daraja app / email" autocomplete="off"/>
+                </div>
+              </div>
+              <div id="mpesa-cred-saved" style="display:none;margin-bottom:14px;padding:12px 14px;background:var(--surface2);border:1px solid var(--line2);border-radius:9px;">
+                <div style="font-size:12px;color:var(--ink2);"><i class="ti ti-lock" style="margin-right:6px;color:var(--green);"></i>Consumer Key, Secret, and Passkey are saved and encrypted.</div>
+                <button class="btn-cl" onclick="showMpesaCredFields()" style="margin-top:10px;">Change credentials</button>
+              </div>
             </div>
-            <div class="fg" style="margin-bottom:14px;">
-              <label>Consumer Secret</label>
-              <input type="password" id="mpesa-consumer-secret-input" placeholder="From your Daraja app" autocomplete="off"/>
-            </div>
-            <div class="fg" style="margin-bottom:14px;">
-              <label>Passkey</label>
-              <input type="password" id="mpesa-passkey-input" placeholder="From your Daraja app / email" autocomplete="off"/>
-            </div>
+
             <div class="form-actions">
               <button class="btn-si" onclick="saveMpesaSettings()"><i class="ti ti-device-floppy"></i> Save M-Pesa settings</button>
             </div>
@@ -1469,7 +1487,7 @@ let realtimeChannel = null;
 // local caches — kept in sync with Supabase so the many render functions
 // below can stay synchronous. Mutations write through to Supabase; sessions
 // and debts also get pushed to every other device via realtime.
-let profileCache = { rate:0, minCharge:0, round:'none', mpesaConsumerKey:'', mpesaConsumerSecret:'', mpesaShortcode:'', mpesaPasskey:'', mpesaEnv:'sandbox' };
+let profileCache = { rate:0, minCharge:0, round:'none' };
 let customerDirectory = {};
 let dailyTotals = {};
 
@@ -1502,14 +1520,13 @@ async function loadAllData(displayName){
   if(profileErr){
     // a real fetch error (network/RLS/etc) — do NOT touch profileCache, and definitely
     // don't recreate the row, or we'd risk wiping out a rate that's actually saved fine.
-    console.error('Could not load profile — pricing/groq key may show stale values until this is fixed:',profileErr.message);
+    console.error('Could not load profile — pricing may show stale values until this is fixed:',profileErr.message);
   } else if(profile){
-    profileCache = { rate: profile.rate_per_hour||0, minCharge: profile.min_charge||0, round: profile.round_mode||'none',
-      mpesaConsumerKey: profile.mpesa_consumer_key||'', mpesaConsumerSecret: profile.mpesa_consumer_secret||'', mpesaShortcode: profile.mpesa_shortcode||'', mpesaPasskey: profile.mpesa_passkey||'', mpesaEnv: profile.mpesa_env||'sandbox' };
+    profileCache = { rate: profile.rate_per_hour||0, minCharge: profile.min_charge||0, round: profile.round_mode||'none' };
   } else {
     // genuinely no profile row yet (e.g. the signup trigger didn't run for this account) —
-    // create one now so saving pricing/groq key later actually has a row to write to.
-    profileCache = { rate:0, minCharge:0, round:'none', mpesaConsumerKey:'', mpesaConsumerSecret:'', mpesaShortcode:'', mpesaPasskey:'', mpesaEnv:'sandbox' };
+    // create one now so saving pricing later actually has a row to write to.
+    profileCache = { rate:0, minCharge:0, round:'none' };
     const {error:createErr}=await sb.from('profiles').upsert({ id:currentUserId, name: displayName||'Owner', rate_per_hour:0, min_charge:0, round_mode:'none' });
     if(createErr) console.error('Could not create missing profile row:',createErr.message);
   }
@@ -1654,73 +1671,83 @@ function loadPricingFields(){
   updatePriceExample();
 }
 
-// M-Pesa credentials are per-owner, entered here instead of being hardcoded
-// server-side — the backend (api/mpesa.js) looks these up by whoever's
-// actually signed in, so each business uses their own till, not a shared one.
-function loadMpesaFields(){
+// M-Pesa credentials: sandbox uses YOUR OWN server-side test credentials
+// automatically (nothing to load or show here). Production credentials are
+// per-owner, encrypted at rest — this only ever loads a STATUS (env, till
+// number, and whether each secret is set), never the actual secret values.
+async function loadMpesaFields(){
   const envI=document.getElementById('mpesa-env-input');
-  const scI=document.getElementById('mpesa-shortcode-input');
-  const ckI=document.getElementById('mpesa-consumer-key-input');
-  const csI=document.getElementById('mpesa-consumer-secret-input');
-  const pkI=document.getElementById('mpesa-passkey-input');
-  if(envI)envI.value=profileCache.mpesaEnv||'sandbox';
-  if(scI)scI.value=profileCache.mpesaShortcode||'';
-  if(ckI)ckI.value=profileCache.mpesaConsumerKey||'';
-  if(csI)csI.value=profileCache.mpesaConsumerSecret||'';
-  if(pkI)pkI.value=profileCache.mpesaPasskey||'';
-}
-// Pulls whatever MPESA_* sandbox values are already set as Vercel env vars
-// (Consumer Key/Secret included, if you've set those there) — so you don't
-// have to retype anything you've already configured. Falls back to
-// Safaricom's public sandbox Till/passkey for whichever fields aren't set.
-async function fillSandboxTestValues(){
-  const btn=event?.target?.closest('button');
-  if(btn){btn.disabled=true;btn.textContent='Loading...';}
   try{
     const {data:{session}}=await sb.auth.getSession();
-    if(!session){ alert('Please log in again.'); return; }
-    const res=await fetch('/api/mpesa?action=sandbox-defaults',{
+    if(!session) return;
+    const res=await fetch('/api/mpesa-settings?action=status',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({accessToken:session.access_token})
     });
     const d=await res.json();
-    if(!res.ok){ alert(d.error||'Could not load sandbox values'); return; }
-    document.getElementById('mpesa-env-input').value='sandbox';
-    document.getElementById('mpesa-shortcode-input').value=d.shortcode;
-    document.getElementById('mpesa-passkey-input').value=d.passkey;
-    document.getElementById('mpesa-consumer-key-input').value=d.consumerKey;
-    document.getElementById('mpesa-consumer-secret-input').value=d.consumerSecret;
-    if(d.consumerKey && d.consumerSecret){
-      alert('Filled in everything from your Vercel env vars. Hit Save to finish.');
-    }else{
-      alert('Filled in the public sandbox Till and Passkey. Your Vercel env vars don\u2019t have a Consumer Key/Secret set, so paste those in from your Daraja sandbox app, then Save.');
-    }
+    if(!res.ok) return;
+    mpesaStatus=d;
+    if(envI)envI.value=d.env||'sandbox';
+    document.getElementById('mpesa-shortcode-input').value=d.shortcode||'';
+    onMpesaEnvChange();
   }catch(e){
-    alert('Could not load sandbox values: '+e.message);
-  }finally{
-    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-flask"></i> Fill sandbox test values';}
+    console.error('loadMpesaFields failed:',e.message);
   }
 }
+let mpesaStatus={env:'sandbox',hasConsumerKey:false,hasConsumerSecret:false,hasPasskey:false};
+
+function onMpesaEnvChange(){
+  const env=document.getElementById('mpesa-env-input').value;
+  document.getElementById('mpesa-sandbox-panel').style.display=env==='sandbox'?'block':'none';
+  document.getElementById('mpesa-production-panel').style.display=env==='production'?'block':'none';
+  if(env==='production'){
+    const allSaved=mpesaStatus.hasConsumerKey && mpesaStatus.hasConsumerSecret && mpesaStatus.hasPasskey;
+    document.getElementById('mpesa-cred-fields').style.display=allSaved?'none':'block';
+    document.getElementById('mpesa-cred-saved').style.display=allSaved?'block':'none';
+  }
+}
+function showMpesaCredFields(){
+  document.getElementById('mpesa-cred-fields').style.display='block';
+  document.getElementById('mpesa-cred-saved').style.display='none';
+  document.getElementById('mpesa-consumer-key-input').value='';
+  document.getElementById('mpesa-consumer-secret-input').value='';
+  document.getElementById('mpesa-passkey-input').value='';
+}
+
 async function saveMpesaSettings(){
   const env=document.getElementById('mpesa-env-input').value||'sandbox';
-  const shortcode=document.getElementById('mpesa-shortcode-input').value.trim();
-  const consumerKey=document.getElementById('mpesa-consumer-key-input').value.trim();
-  const consumerSecret=document.getElementById('mpesa-consumer-secret-input').value.trim();
-  const passkey=document.getElementById('mpesa-passkey-input').value.trim();
-  profileCache.mpesaEnv=env; profileCache.mpesaShortcode=shortcode;
-  profileCache.mpesaConsumerKey=consumerKey; profileCache.mpesaConsumerSecret=consumerSecret; profileCache.mpesaPasskey=passkey;
   const msg=document.getElementById('mpesa-saved-msg');
-  const {error}=await sb.from('profiles').upsert({
-    id:currentUserId, name:(document.getElementById('owner-name')?.textContent||'Owner'),
-    mpesa_env:env, mpesa_shortcode:shortcode,
-    mpesa_consumer_key:consumerKey, mpesa_consumer_secret:consumerSecret, mpesa_passkey:passkey
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){ alert('Please log in again.'); return; }
+
+  const body={
+    accessToken:session.access_token, env,
+    name:(document.getElementById('owner-name')?.textContent||'Owner'),
+  };
+  if(env==='production'){
+    body.shortcode=document.getElementById('mpesa-shortcode-input').value.trim();
+    // only send credential fields if the owner actually typed something new —
+    // if they're still masked/collapsed, leave whatever's already saved alone
+    const fieldsVisible=document.getElementById('mpesa-cred-fields').style.display!=='none';
+    if(fieldsVisible){
+      body.consumerKey=document.getElementById('mpesa-consumer-key-input').value.trim();
+      body.consumerSecret=document.getElementById('mpesa-consumer-secret-input').value.trim();
+      body.passkey=document.getElementById('mpesa-passkey-input').value.trim();
+    }
+  }
+
+  const res=await fetch('/api/mpesa-settings?action=save',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)
   });
-  if(error){
-    console.error('saveMpesaSettings failed:',error.message);
-    alert('Could not save M-Pesa settings: '+error.message);
+  const d=await res.json();
+  if(!res.ok){
+    alert('Could not save M-Pesa settings: '+(d.error||'unknown error'));
     return;
   }
+  await loadMpesaFields(); // refresh status so the masked "saved" state reflects reality
   if(msg){msg.style.display='block';setTimeout(()=>msg.style.display='none',2000);}
 }
 
