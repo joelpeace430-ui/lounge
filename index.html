@@ -302,7 +302,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .cap-label{font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px;}
 .cap-text strong{font-size:12px;font-family:var(--mono);color:var(--ink);font-weight:600;display:block;letter-spacing:.04em;}
 .cap-check{margin-left:auto;color:var(--green);font-size:20px;}
-.groq-reading{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;background:var(--purple-bg);color:var(--purple);margin-bottom:12px;border:1px solid var(--purple-border);}
+.scan-reading{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;background:var(--purple-bg);color:var(--purple);margin-bottom:12px;border:1px solid var(--purple-border);}
 
 /* form fields */
 .fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
@@ -596,7 +596,7 @@ body.dark{
 .cap-thumb-sm{width:60px;height:38px;object-fit:cover;border-radius:7px;border:1px solid var(--green-border);flex-shrink:0;}
 .cap-strip-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--green-dim);margin-bottom:2px;}
 .cap-strip-id{font-size:12px;font-family:var(--mono);font-weight:600;color:var(--ink);letter-spacing:.04em;}
-.groq-pill{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;color:var(--purple);background:var(--purple-bg);border-bottom:1px solid var(--purple-border);padding:9px 17px;}
+.scan-pill{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:600;color:var(--purple);background:var(--purple-bg);border-bottom:1px solid var(--purple-border);padding:9px 17px;}
 
 .intake-fields{padding:15px 17px;display:flex;flex-direction:column;gap:13px;}
 .intake-field{display:flex;flex-direction:column;gap:5px;}
@@ -812,7 +812,7 @@ body.dark{
       <div class="strip-bar"><div class="strip-fill" id="main-conf"></div></div>
       <div class="spill scanning" id="main-pill"><span class="sdot pulse"></span> Starting...</div>
       <button class="sb-btn sb-grn" id="capture-btn" onclick="takePicture()" disabled style="margin-top:8px;"><i class="ti ti-camera" style="font-size:13px;margin-right:5px;" aria-hidden="true"></i>Take picture</button>
-      <button class="sb-btn sb-grn" id="groq-read-btn" onclick="groqReadNow()" style="display:none;margin-top:8px;"><i class="ti ti-scan" style="font-size:13px;margin-right:5px;" aria-hidden="true"></i>Groq read</button>
+      <button class="sb-btn sb-grn" id="ai-read-btn" onclick="readCardNow()" style="display:none;margin-top:8px;"><i class="ti ti-scan" style="font-size:13px;margin-right:5px;" aria-hidden="true"></i>Read card</button>
       <button class="sb-btn sb-dim" id="retake-btn" onclick="retakePicture()" style="display:none;"><i class="ti ti-refresh" style="font-size:13px;margin-right:5px;" aria-hidden="true"></i>Retake</button>
       <div class="scan-hint" id="scan-hint-text">Line up the card, then tap Take picture</div>
     </div>
@@ -922,8 +922,8 @@ body.dark{
               </div>
               <i class="ti ti-circle-check-filled" style="color:var(--green);font-size:20px;margin-left:auto;"></i>
             </div>
-            <div id="groq-badge" class="groq-pill" style="display:none;">
-              <span class="sdot pulse"></span> Groq reading card...
+            <div id="scan-badge" class="scan-pill" style="display:none;">
+              <span class="sdot pulse"></span> Reading card...
             </div>
             <div class="intake-fields">
               <div class="intake-field">
@@ -1259,28 +1259,6 @@ body.dark{
           </div>
         </div>
 
-        <!-- Groq API Key -->
-        <div class="panel">
-          <div class="panel-head">
-            <div class="panel-head-left">
-              <div class="panel-icon"><i class="ti ti-key"></i></div>
-              <div><div class="panel-title">Groq API key</div><div class="panel-sub">Used to read ID cards automatically</div></div>
-            </div>
-          </div>
-          <div class="panel-body">
-            <div class="fg">
-              <label>API key</label>
-              <input type="password" id="groq-key-input" placeholder="gsk_..." style="font-family:var(--mono);"/>
-            </div>
-            <div class="form-actions">
-              <button class="btn-si" onclick="saveGroqKey()"><i class="ti ti-device-floppy"></i> Save key</button>
-              <button class="btn-cl" onclick="toggleKeyVisibility()"><i class="ti ti-eye" id="key-eye-icon"></i> Show</button>
-            </div>
-            <p id="key-saved-msg" style="font-size:12px;color:var(--green);margin-top:12px;display:none;"><i class="ti ti-check" style="margin-right:4px;"></i>API key saved</p>
-            <p style="font-size:12px;color:var(--ink3);margin-top:14px;line-height:1.6;">Get a free key at <span style="font-family:var(--mono);color:var(--ink2);">console.groq.com/keys</span></p>
-          </div>
-        </div>
-
         <!-- Voice announcements -->
         <div class="panel">
           <div class="panel-head">
@@ -1482,7 +1460,7 @@ let realtimeChannel = null;
 // local caches — kept in sync with Supabase so the many render functions
 // below can stay synchronous. Mutations write through to Supabase; sessions
 // and debts also get pushed to every other device via realtime.
-let profileCache = { rate:0, minCharge:0, round:'none', groqKey:'', mpesaConsumerKey:'', mpesaConsumerSecret:'', mpesaShortcode:'', mpesaPasskey:'', mpesaEnv:'sandbox' };
+let profileCache = { rate:0, minCharge:0, round:'none', mpesaConsumerKey:'', mpesaConsumerSecret:'', mpesaShortcode:'', mpesaPasskey:'', mpesaEnv:'sandbox' };
 let customerDirectory = {};
 let dailyTotals = {};
 
@@ -1517,13 +1495,13 @@ async function loadAllData(displayName){
     // don't recreate the row, or we'd risk wiping out a rate that's actually saved fine.
     console.error('Could not load profile — pricing/groq key may show stale values until this is fixed:',profileErr.message);
   } else if(profile){
-    profileCache = { rate: profile.rate_per_hour||0, minCharge: profile.min_charge||0, round: profile.round_mode||'none', groqKey: profile.groq_key||'',
+    profileCache = { rate: profile.rate_per_hour||0, minCharge: profile.min_charge||0, round: profile.round_mode||'none',
       mpesaConsumerKey: profile.mpesa_consumer_key||'', mpesaConsumerSecret: profile.mpesa_consumer_secret||'', mpesaShortcode: profile.mpesa_shortcode||'', mpesaPasskey: profile.mpesa_passkey||'', mpesaEnv: profile.mpesa_env||'sandbox' };
   } else {
     // genuinely no profile row yet (e.g. the signup trigger didn't run for this account) —
     // create one now so saving pricing/groq key later actually has a row to write to.
-    profileCache = { rate:0, minCharge:0, round:'none', groqKey:'', mpesaConsumerKey:'', mpesaConsumerSecret:'', mpesaShortcode:'', mpesaPasskey:'', mpesaEnv:'sandbox' };
-    const {error:createErr}=await sb.from('profiles').upsert({ id:currentUserId, name: displayName||'Owner', rate_per_hour:0, min_charge:0, round_mode:'none', groq_key:'' });
+    profileCache = { rate:0, minCharge:0, round:'none', mpesaConsumerKey:'', mpesaConsumerSecret:'', mpesaShortcode:'', mpesaPasskey:'', mpesaEnv:'sandbox' };
+    const {error:createErr}=await sb.from('profiles').upsert({ id:currentUserId, name: displayName||'Owner', rate_per_hour:0, min_charge:0, round_mode:'none' });
     if(createErr) console.error('Could not create missing profile row:',createErr.message);
   }
   sessions = (sessRows||[]).map(dbRowToSession);
@@ -1820,8 +1798,6 @@ function renderDailyHistory(){
   }).join('');
 }
 
-function getGroqKey(){ return profileCache.groqKey || ''; }
-
 let mainStream=null;
 let captured=false,pendingFrames=null;
 let sessions=[],curView='signin';
@@ -1972,7 +1948,7 @@ function armCapture(msg){
   document.getElementById('capture-preview').style.display='none';
   const btn=document.getElementById('capture-btn');
   if(btn){btn.disabled=false;btn.style.display='flex';}
-  const rb=document.getElementById('groq-read-btn');
+  const rb=document.getElementById('ai-read-btn');
   if(rb){rb.disabled=false;rb.style.display='none';}
   const tb=document.getElementById('retake-btn');
   if(tb){tb.disabled=false;tb.style.display='none';}
@@ -2096,11 +2072,11 @@ async function takePicture(){
   preview.src=frames[0];
   preview.style.display='block';
   document.getElementById('capture-btn').style.display='none';
-  document.getElementById('groq-read-btn').style.display='flex';
+  document.getElementById('ai-read-btn').style.display='flex';
   document.getElementById('retake-btn').style.display='flex';
   document.getElementById('main-conf').style.width='0%';
   setPill('signin','Photo captured — review it');
-  document.getElementById('scan-hint-text').textContent='Good shot? Tap Groq read. Blurry? Retake.';
+  document.getElementById('scan-hint-text').textContent='Good shot? Tap Read card. Blurry? Retake.';
 }
 
 function retakePicture(){
@@ -2108,15 +2084,15 @@ function retakePicture(){
   document.getElementById('strip-live').style.display='block';
   document.getElementById('capture-preview').style.display='none';
   document.getElementById('capture-btn').style.display='flex';
-  document.getElementById('groq-read-btn').style.display='none';
+  document.getElementById('ai-read-btn').style.display='none';
   document.getElementById('retake-btn').style.display='none';
   document.getElementById('scan-hint-text').textContent='Line up the card, then tap Take picture';
   armCapture();
 }
 
-function groqReadNow(){
+function readCardNow(){
   if(!pendingFrames)return;
-  document.getElementById('groq-read-btn').disabled=true;
+  document.getElementById('ai-read-btn').disabled=true;
   document.getElementById('retake-btn').disabled=true;
   setPill('reading','Reading ID...');
   processCapture(pendingFrames);
@@ -2125,59 +2101,27 @@ function groqReadNow(){
 async function processCapture(frames){
   const url=frames[0];
 
-  const key=getGroqKey();
-  if(!key){
-    setPill('scanning','No Groq API key set — open Settings');
-    setBanner('scanning','Add your Groq API key in Settings to enable ID reading');
-    setTimeout(()=>armCapture(),2500);
-    return;
-  }
-  const prompt='This is a Kenyan national ID card photo.\n\nYour job is to READ and COPY text exactly as printed — do NOT guess, infer, or autocorrect anything.\n\nIMPORTANT — there are TWO different numbers on this card and they are easy to mix up:\n1. A short document/serial number — often near the top of the card, sometimes right next to or above the photo. This is NOT what we want.\n2. The actual ID NUMBER — labelled "ID NUMBER" or "NAMBARI YA KITAMBULISHO" (Swahili). This is what we want.\n\nThese two numbers can appear on the SAME row near the top of the card, one on the left and one on the right — do not assume the ID number is whichever one you see first or whichever is more prominent. Find the literal label text "ID NUMBER" / "NAMBARI YA KITAMBULISHO" printed on the card, then read ONLY the digits printed immediately next to or below that specific label. Ignore any other number on the card, no matter where it is positioned.\n\nExtract:\n1. Full name: printed in bold capitals, labelled JINA/NAME. Copy every letter exactly as you see it.\n2. National ID number: exactly 8 digits, found next to the "ID NUMBER"/"NAMBARI YA KITAMBULISHO" label specifically — never the serial/document number.\n\nRules:\n- If you are not 100% certain of a character, write UNKNOWN for that field\n- Never guess or fill in missing characters\n- The ID number must be exactly 8 digits — if what is next to the ID NUMBER label is not 8 digits, write UNKNOWN\n- If you cannot clearly identify which number is labelled as the ID number, write UNKNOWN rather than picking the closest-looking number\n\nReply ONLY in this exact format:\nNAME: <name or UNKNOWN>\nID: <8 digits or UNKNOWN>';
-
-  async function callGroqOnce(b64){
-    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-      body:JSON.stringify({
-        model:'meta-llama/llama-4-scout-17b-16e-instruct',
-        max_tokens:60,
-        temperature:0,
-        messages:[{role:'user',content:[
-          {type:'image_url',image_url:{url:'data:image/jpeg;base64,'+b64}},
-          {type:'text',text:prompt}
-        ]}]
-      })
-    });
-    const data=await res.json();
-    const txt=data.choices?.[0]?.message?.content||'';
-    const nm=txt.match(/NAME:\s*(.+)/i);
-    const id=txt.match(/ID:\s*(\d{8})/i); // must be exactly 8 digits
-    return{
-      name:(nm?nm[1].trim():'UNKNOWN'),
-      idnum:(id?id[1].trim():'UNKNOWN')
-    };
-  }
-
   try{
     setPill('reading','Reading ID...');
-    const [pass1,pass2,pass3]=await Promise.all(
-      frames.map(f=>callGroqOnce(f.split(',')[1]))
-    );
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session){
+      setPill('scanning','Please log in again');
+      setTimeout(()=>armCapture(),2000);
+      return;
+    }
+    const res=await fetch('/api/scan-id',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({frames:frames.map(f=>f.split(',')[1]),accessToken:session.access_token})
+    });
+    const result=await res.json();
+    if(!res.ok){
+      setPill('scanning',result.error||'Read error — try again');
+      setTimeout(()=>armCapture(),2000);
+      return;
+    }
 
-    // majority vote on ID number — need at least 2 of 3 to agree
-    const ids=[pass1.idnum,pass2.idnum,pass3.idnum];
-    const idCounts={};
-    ids.forEach(id=>{if(id!=='UNKNOWN')idCounts[id]=(idCounts[id]||0)+1;});
-    const majorityId=Object.entries(idCounts).find(([,c])=>c>=2)?.[0]||'UNKNOWN';
-
-    // majority vote on name — take the one that appears most, fallback to pass1
-    const names=[pass1.name,pass2.name,pass3.name].filter(n=>n!=='UNKNOWN');
-    const nameCounts={};
-    names.forEach(n=>{nameCounts[n]=(nameCounts[n]||0)+1;});
-    const majorityName=Object.entries(nameCounts).sort((a,b)=>b[1]-a[1])[0]?.[0]||'UNKNOWN';
-
-    const name=majorityName;
-    const idnum=majorityId;
+    const{name,idnum}=result;
     setPill('reading',`Got: ${name} / ${idnum}`);
 
     if(name==='UNKNOWN' && idnum==='UNKNOWN'){
@@ -2194,7 +2138,7 @@ async function processCapture(frames){
 
     routeCard(url,name,idnum);
   }catch(e){
-    setPill('scanning','Groq error — try again');
+    setPill('scanning','Read error — try again');
     setTimeout(()=>armCapture(),2000);
   }
 }
@@ -2470,7 +2414,7 @@ function routeCard(url,name,idnum){
     // NEW CUSTOMER — fill sign-in form
     document.getElementById('cap-thumb').src=url;
     document.getElementById('cap-row').style.display='flex';
-    document.getElementById('groq-badge').style.display='none';
+    document.getElementById('scan-badge').style.display='none';
     document.getElementById('inp-name').value=name;
     document.getElementById('inp-name').classList.add('filled');
     document.getElementById('inp-id').value=idnum;
@@ -2610,8 +2554,8 @@ async function ownerOverrideSignIn(){
 
 function resetScan(){
   document.getElementById('cap-row').style.display='none';
-  document.getElementById('groq-badge').style.display='none';
-  ['inp-name','inp-id'].forEach(id=>{const el=document.getElementById(id);el.value='';el.classList.remove('filled');el.placeholder='Auto-filled by Groq';});
+  document.getElementById('scan-badge').style.display='none';
+  ['inp-name','inp-id'].forEach(id=>{const el=document.getElementById(id);el.value='';el.classList.remove('filled');el.placeholder='Auto-filled';});
   document.getElementById('inp-phone').value='';
   document.getElementById('signin-btn').disabled=true;
   document.getElementById('known-badge').style.display='none';
@@ -2665,8 +2609,6 @@ function switchView(v){
   if(v==='calendar')renderCalendar();
   if(v==='signin')focusSignInForm();
   if(v==='settings'){
-    const k=getGroqKey();
-    document.getElementById('groq-key-input').value=k;
     loadPricingFields();
     loadMpesaFields();
     if(vt)vt.checked=!isVoiceMuted();
@@ -3014,22 +2956,6 @@ function loadDemoData(){
   switchView('sessions');
 }
 
-async function saveGroqKey(){
-  const k=document.getElementById('groq-key-input').value.trim();
-  profileCache.groqKey=k;
-  const msg=document.getElementById('key-saved-msg');
-  msg.style.display='block';
-  setTimeout(()=>{msg.style.display='none';},2500);
-  const {error}=await sb.from('profiles').upsert({id:currentUserId,groq_key:k});
-  if(error) console.error('saveGroqKey failed:',error.message);
-}
-
-function toggleKeyVisibility(){
-  const inp=document.getElementById('groq-key-input');
-  const icon=document.getElementById('key-eye-icon');
-  if(inp.type==='password'){inp.type='text';icon.className='ti ti-eye-off';}
-  else{inp.type='password';icon.className='ti ti-eye';}
-}
 // ── premium micro-interactions ──────────────────────────────────────────────
 function animateNumber(el,target,opts){
   if(!el)return;
@@ -3431,7 +3357,6 @@ async function launchDashboard(name){
   subscribeRealtime();
   loadPricingFields();
   loadMpesaFields();
-  if(keyInp) keyInp.value=profileCache.groqKey;
   updateStats();renderRecent();renderSessions();renderActiveCards();renderDailyHistory();updateTodayLiveTotal();renderDebtors();
 
   // restore camera toggle state
