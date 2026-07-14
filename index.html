@@ -1466,7 +1466,7 @@ body.dark{
     </div>
     <div class="pm-summary">
       <p style="font-size:13px;color:var(--ink2);line-height:1.6;margin:0;">
-        This customer owes <strong style="color:var(--red);" id="db-amount"></strong> from a previous visit.
+        This customer owes <strong style="color:var(--red);" id="db-amount"></strong> from a previous visit<span id="db-since-wrap"> — borrowed <strong style="color:var(--ink);" id="db-since"></strong></span>.
         They can't sign in again until this is settled — unless the owner chooses to allow it anyway.
       </p>
     </div>
@@ -2611,6 +2611,14 @@ function openDebtBlockModal(){
   document.getElementById('db-name').textContent=name;
   document.getElementById('db-idnum').textContent=idnum;
   document.getElementById('db-amount').textContent=fmtPrice(debtAmt);
+  const since=debtSince[idnum.toLowerCase().trim()];
+  const sinceWrap=document.getElementById('db-since-wrap');
+  if(since){
+    sinceWrap.style.display='inline';
+    document.getElementById('db-since').textContent=fmtDate(since)+' at '+fmtTime(since);
+  }else{
+    sinceWrap.style.display='none'; // no record of when — don't show a made-up date
+  }
   document.getElementById('debt-block-modal').style.display='flex';
 }
 function closeDebtBlockModal(){
