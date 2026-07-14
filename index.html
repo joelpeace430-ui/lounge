@@ -1172,6 +1172,50 @@ body.dark{
           </div>
         </div>
 
+        <!-- M-Pesa -->
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-head-left">
+              <div class="panel-icon"><i class="ti ti-brand-android"></i></div>
+              <div><div class="panel-title">M-Pesa</div><div class="panel-sub">Your own till/paybill for STK push payments</div></div>
+            </div>
+          </div>
+          <div class="panel-body">
+            <p style="font-size:12px;color:var(--ink3);line-height:1.7;margin-bottom:14px;">
+              These are YOUR own Daraja credentials from Safaricom — not shared with anyone else.
+              Get them from <span style="color:var(--ink2);">developer.safaricom.co.ke</span> after your
+              Go Live application is approved. Only you can see these values.
+            </p>
+            <div class="fg" style="margin-bottom:14px;">
+              <label>Environment</label>
+              <select id="mpesa-env-input" style="width:100%;padding:8px 11px;background:var(--surface2);border:1px solid var(--line2);border-radius:8px;color:var(--ink);font-size:13px;font-family:var(--sans);outline:none;">
+                <option value="sandbox">Sandbox (testing)</option>
+                <option value="production">Production (real payments)</option>
+              </select>
+            </div>
+            <div class="fg" style="margin-bottom:14px;">
+              <label>Till / Paybill number</label>
+              <input type="text" id="mpesa-shortcode-input" placeholder="e.g. 174379"/>
+            </div>
+            <div class="fg" style="margin-bottom:14px;">
+              <label>Consumer Key</label>
+              <input type="password" id="mpesa-consumer-key-input" placeholder="From your Daraja app" autocomplete="off"/>
+            </div>
+            <div class="fg" style="margin-bottom:14px;">
+              <label>Consumer Secret</label>
+              <input type="password" id="mpesa-consumer-secret-input" placeholder="From your Daraja app" autocomplete="off"/>
+            </div>
+            <div class="fg" style="margin-bottom:14px;">
+              <label>Passkey</label>
+              <input type="password" id="mpesa-passkey-input" placeholder="From your Daraja app / email" autocomplete="off"/>
+            </div>
+            <div class="form-actions">
+              <button class="btn-si" onclick="saveMpesaSettings()"><i class="ti ti-device-floppy"></i> Save M-Pesa settings</button>
+            </div>
+            <p id="mpesa-saved-msg" style="font-size:12px;color:var(--green);margin-top:10px;display:none;"><i class="ti ti-check" style="margin-right:4px;"></i>M-Pesa settings saved</p>
+          </div>
+        </div>
+
         <!-- Daily revenue & reset -->
         <div class="panel">
           <div class="panel-head">
@@ -1438,7 +1482,7 @@ let realtimeChannel = null;
 // local caches — kept in sync with Supabase so the many render functions
 // below can stay synchronous. Mutations write through to Supabase; sessions
 // and debts also get pushed to every other device via realtime.
-let profileCache = { rate:0, minCharge:0, round:'none', groqKey:'' };
+let profileCache = { rate:0, minCharge:0, round:'none', groqKey:'', mpesaConsumerKey:'', mpesaConsumerSecret:'', mpesaShortcode:'', mpesaPasskey:'', mpesaEnv:'sandbox' };
 let customerDirectory = {};
 let dailyTotals = {};
 
@@ -1473,11 +1517,12 @@ async function loadAllData(displayName){
     // don't recreate the row, or we'd risk wiping out a rate that's actually saved fine.
     console.error('Could not load profile — pricing/groq key may show stale values until this is fixed:',profileErr.message);
   } else if(profile){
-    profileCache = { rate: profile.rate_per_hour||0, minCharge: profile.min_charge||0, round: profile.round_mode||'none', groqKey: profile.groq_key||'' };
+    profileCache = { rate: profile.rate_per_hour||0, minCharge: profile.min_charge||0, round: profile.round_mode||'none', groqKey: profile.groq_key||'',
+      mpesaConsumerKey: profile.mpesa_consumer_key||'', mpesaConsumerSecret: profile.mpesa_consumer_secret||'', mpesaShortcode: profile.mpesa_shortcode||'', mpesaPasskey: profile.mpesa_passkey||'', mpesaEnv: profile.mpesa_env||'sandbox' };
   } else {
     // genuinely no profile row yet (e.g. the signup trigger didn't run for this account) —
     // create one now so saving pricing/groq key later actually has a row to write to.
-    profileCache = { rate:0, minCharge:0, round:'none', groqKey:'' };
+    profileCache = { rate:0, minCharge:0, round:'none', groqKey:'', mpesaConsumerKey:'', mpesaConsumerSecret:'', mpesaShortcode:'', mpesaPasskey:'', mpesaEnv:'sandbox' };
     const {error:createErr}=await sb.from('profiles').upsert({ id:currentUserId, name: displayName||'Owner', rate_per_hour:0, min_charge:0, round_mode:'none', groq_key:'' });
     if(createErr) console.error('Could not create missing profile row:',createErr.message);
   }
@@ -1617,6 +1662,42 @@ function loadPricingFields(){
   if(roi)roi.value=p.round;
   if(wsi)wsi.checked=getWholeShillings();
   updatePriceExample();
+}
+
+// M-Pesa credentials are per-owner, entered here instead of being hardcoded
+// server-side — the backend (api/mpesa.js) looks these up by whoever's
+// actually signed in, so each business uses their own till, not a shared one.
+function loadMpesaFields(){
+  const envI=document.getElementById('mpesa-env-input');
+  const scI=document.getElementById('mpesa-shortcode-input');
+  const ckI=document.getElementById('mpesa-consumer-key-input');
+  const csI=document.getElementById('mpesa-consumer-secret-input');
+  const pkI=document.getElementById('mpesa-passkey-input');
+  if(envI)envI.value=profileCache.mpesaEnv||'sandbox';
+  if(scI)scI.value=profileCache.mpesaShortcode||'';
+  if(ckI)ckI.value=profileCache.mpesaConsumerKey||'';
+  if(csI)csI.value=profileCache.mpesaConsumerSecret||'';
+  if(pkI)pkI.value=profileCache.mpesaPasskey||'';
+}
+async function saveMpesaSettings(){
+  const env=document.getElementById('mpesa-env-input').value||'sandbox';
+  const shortcode=document.getElementById('mpesa-shortcode-input').value.trim();
+  const consumerKey=document.getElementById('mpesa-consumer-key-input').value.trim();
+  const consumerSecret=document.getElementById('mpesa-consumer-secret-input').value.trim();
+  const passkey=document.getElementById('mpesa-passkey-input').value.trim();
+  profileCache.mpesaEnv=env; profileCache.mpesaShortcode=shortcode;
+  profileCache.mpesaConsumerKey=consumerKey; profileCache.mpesaConsumerSecret=consumerSecret; profileCache.mpesaPasskey=passkey;
+  const msg=document.getElementById('mpesa-saved-msg');
+  const {error}=await sb.from('profiles').upsert({
+    id:currentUserId, mpesa_env:env, mpesa_shortcode:shortcode,
+    mpesa_consumer_key:consumerKey, mpesa_consumer_secret:consumerSecret, mpesa_passkey:passkey
+  });
+  if(error){
+    console.error('saveMpesaSettings failed:',error.message);
+    alert('Could not save M-Pesa settings: '+error.message);
+    return;
+  }
+  if(msg){msg.style.display='block';setTimeout(()=>msg.style.display='none',2000);}
 }
 
 // ── DAILY REVENUE TRACKING & RESET ───────────────────────────────────────────
@@ -2587,7 +2668,7 @@ function switchView(v){
     const k=getGroqKey();
     document.getElementById('groq-key-input').value=k;
     loadPricingFields();
-    const vt=document.getElementById('voice-enabled-toggle');
+    loadMpesaFields();
     if(vt)vt.checked=!isVoiceMuted();
     document.querySelectorAll('.reset-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===getResetMode()));
     renderDailyHistory();
@@ -3349,7 +3430,7 @@ async function launchDashboard(name){
   await loadAllData(name);
   subscribeRealtime();
   loadPricingFields();
-  const keyInp=document.getElementById('groq-key-input');
+  loadMpesaFields();
   if(keyInp) keyInp.value=profileCache.groqKey;
   updateStats();renderRecent();renderSessions();renderActiveCards();renderDailyHistory();updateTodayLiveTotal();renderDebtors();
 
