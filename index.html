@@ -1635,8 +1635,11 @@ async function savePricing(){
   const msg=document.getElementById('pricing-saved-msg');
   if(msg){msg.style.display='block';setTimeout(()=>msg.style.display='none',2000);}
   renderSessions();renderRecent();
-  const {error}=await sb.from('profiles').upsert({id:currentUserId,rate_per_hour:rate,min_charge:minCharge,round_mode:round});
-  if(error) console.error('savePricing failed:',error.message);
+  const {error}=await sb.from('profiles').upsert({id:currentUserId,name:(document.getElementById('owner-name')?.textContent||'Owner'),rate_per_hour:rate,min_charge:minCharge,round_mode:round});
+  if(error){
+    console.error('savePricing failed:',error.message);
+    alert('Could not save pricing: '+error.message);
+  }
 }
 function loadPricingFields(){
   const p=getPricing();
@@ -1709,7 +1712,8 @@ async function saveMpesaSettings(){
   profileCache.mpesaConsumerKey=consumerKey; profileCache.mpesaConsumerSecret=consumerSecret; profileCache.mpesaPasskey=passkey;
   const msg=document.getElementById('mpesa-saved-msg');
   const {error}=await sb.from('profiles').upsert({
-    id:currentUserId, mpesa_env:env, mpesa_shortcode:shortcode,
+    id:currentUserId, name:(document.getElementById('owner-name')?.textContent||'Owner'),
+    mpesa_env:env, mpesa_shortcode:shortcode,
     mpesa_consumer_key:consumerKey, mpesa_consumer_secret:consumerSecret, mpesa_passkey:passkey
   });
   if(error){
