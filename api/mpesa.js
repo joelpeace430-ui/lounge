@@ -300,9 +300,35 @@ async function handleCallback(req, res) {
   }
 }
 
+// ── returns whatever MPESA_* sandbox values are already sitting in Vercel env
+// vars, so Settings → M-Pesa → "Fill sandbox test values" can pull them in
+// instead of making you retype them. Sandbox only — production credentials
+// are never handed back this way, those stay per-owner in Supabase only. ───
+async function handleSandboxDefaults(req, res) {
+  try {
+    const { accessToken } = req.body || {};
+    if (!accessToken) return res.status(401).json({ error: 'Please log in again' });
+    const userRes = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${accessToken}`, apikey: process.env.SUPABASE_ANON_KEY },
+    });
+    if (!userRes.ok) return res.status(401).json({ error: 'Invalid session — please log in again' });
+
+    return res.status(200).json({
+      consumerKey: process.env.MPESA_CONSUMER_KEY || '',
+      consumerSecret: process.env.MPESA_CONSUMER_SECRET || '',
+      shortcode: process.env.MPESA_SHORTCODE || '174379',
+      passkey: process.env.MPESA_PASSKEY || 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919',
+    });
+  } catch (err) {
+    console.error('mpesa sandbox-defaults error:', err);
+    return res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+}
+
 // ── router ──────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   if (req.query.action === 'callback') return handleCallback(req, res);
+  if (req.query.action === 'sandbox-defaults') return handleSandboxDefaults(req, res);
   return handleInitiate(req, res);
 }
