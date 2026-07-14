@@ -2212,11 +2212,15 @@ async function finishSignOut(existing,signOutTime,paid,debtBefore,debtAfter){
   existing.debtAfter=debtAfter;
   if(debtAfter!=null) await setDebtFor(existing.idnum,debtAfter);
 
-  await sb.from('sessions').update({
+  const{error:signOutErr}=await sb.from('sessions').update({
     signed_out:true, sign_out_time:new Date(signOutTime).toISOString(),
     amount_paid:existing.amountPaid, payment_method:existing.paymentMethod,
     debt_after:existing.debtAfter, debt_before:existing.debtBefore
   }).eq('id',existing.id);
+  if(signOutErr){
+    console.error('Sign-out failed to save:',signOutErr);
+    setBanner('signout','⚠ Payment for '+existing.name+' was NOT saved — check your connection and try again ('+signOutErr.message+')');
+  }
 
   if(overtime>0){
     const otMins=Math.round(overtime/60000);
