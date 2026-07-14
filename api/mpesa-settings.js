@@ -15,10 +15,29 @@
 //
 // Required environment variables (Vercel → Project → Settings → Environment Variables):
 //   SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY  — same as mpesa.js
-//   MPESA_ENCRYPTION_KEY                                        — see lib/mpesaCrypto.js
+//   MPESA_ENCRYPTION_KEY                                        — a 32-byte key, base64-encoded.
+//     Generate one with: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+//     Must be the SAME value used in api/mpesa.js — set once, never change it.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { encrypt } from '../lib/mpesaCrypto.js';
+import crypto from 'crypto';
+
+// Encrypts with AES-256-GCM before storing. Deliberately inlined here (not
+// imported from a shared /lib file) — Vercel's per-function bundler doesn't
+// reliably trace relative imports reaching outside a function's own folder in
+// a plain (no build step) project, which caused "Cannot find module" crashes
+// in production. Duplicating ~15 lines is a much smaller cost than an entire
+// endpoint going down. Keep this in sync with the matching copy in api/mpesa.js.
+function encrypt(plaintext) {
+  if (!plaintext) return '';
+  const key = Buffer.from(process.env.MPESA_ENCRYPTION_KEY || '', 'base64');
+  if (key.length !== 32) throw new Error('MPESA_ENCRYPTION_KEY must decode to exactly 32 bytes');
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const ciphertext = Buffer.concat([cipher.update(String(plaintext), 'utf8'), cipher.final()]);
+  const authTag = cipher.getAuthTag();
+  return [iv.toString('base64'), authTag.toString('base64'), ciphertext.toString('base64')].join(':');
+}
 
 async function sbFetch(path, opts = {}) {
   const headers = {
