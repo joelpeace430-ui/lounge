@@ -8,11 +8,19 @@
 //   POST /api/mpesa                  → called by index.html to send an STK push
 //   POST /api/mpesa?action=callback  → called by Safaricom to confirm the result
 //
+// MULTI-TENANT: each business owner uses their OWN Daraja till/paybill, not a
+// shared one. Their Consumer Key/Secret, Shortcode, Passkey, and environment
+// (sandbox/production) live on their own `profiles` row in Supabase — set
+// from the app's Settings page — and are looked up per-request based on
+// whichever owner is actually signed in / whichever owner the transaction
+// belongs to. There is no single "the" till anymore.
+//
 // Why this can't be merged into index.html:
 //   1. Vercel only turns files inside an "api/" folder into live server
 //      addresses — merged into the HTML, this would just be inert text.
-//   2. It holds secret keys (Daraja Consumer Secret, Supabase service_role
-//      key) that would be stolen instantly if they were in the browser's HTML.
+//   2. It holds secret keys (Supabase service_role key, and now reads each
+//      owner's Daraja Consumer Secret from the database) that would be stolen
+//      instantly if they were in the browser's HTML.
 //
 // Deploy alongside (same folder structure):
 //   /index.html
@@ -20,13 +28,14 @@
 //   /package.json
 //
 // Required environment variables (Vercel → Project → Settings → Environment Variables):
-//   MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET   — from your Daraja app
-//   MPESA_SHORTCODE, MPESA_PASSKEY              — your Till/Paybill + passkey
-//   MPESA_ENV                                   — "sandbox" or "production"
 //   SUPABASE_URL                                — same URL used in the frontend
 //   SUPABASE_ANON_KEY                           — same anon key used in the frontend
 //   SUPABASE_SERVICE_ROLE_KEY                   — Supabase → Settings → API → service_role key (secret — never used in the frontend)
 //   PUBLIC_BASE_URL                             — your deployed site's URL, e.g. https://your-app.vercel.app
+//
+// NOT needed anymore as env vars — these now come from each owner's profile
+// row instead (set via Settings → M-Pesa in the app):
+//   MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_SHORTCODE, MPESA_PASSKEY, MPESA_ENV
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function sbFetch(path, opts = {}) {
@@ -58,6 +67,15 @@ function calcPrice(elapsedMs, profile) {
   return Math.round(price * 100) / 100;
 }
 
+// checks that an owner's profile actually has usable Daraja credentials set,
+// and returns a clear, specific message naming what's missing if not — this
+// is the #1 thing that goes wrong for a brand new owner who hasn't filled in
+// Settings → M-Pesa yet.
+function missingMpesaFields(profile) {
+  const need = { mpesa_consumer_key: 'Consumer Key', mpesa_consumer_secret: 'Consumer Secret', mpesa_shortcode: 'Till/Paybill number', mpesa_passkey: 'Passkey' };
+  return Object.keys(need).filter(k => !profile[k]).map(k => need[k]);
+}
+
 // ── STK push initiation — called from the browser ──────────────────────────────
 async function handleInitiate(req, res) {
   try {
@@ -74,14 +92,19 @@ async function handleInitiate(req, res) {
     const user = await userRes.json();
     const ownerId = user.id;
 
-    // fail fast with a clear message if any required env var is missing —
-    // this is the #1 cause of the cryptic "Unexpected end of JSON input" crash
-    // (Safaricom returns an empty body when the auth header is malformed)
-    const required = ['MPESA_CONSUMER_KEY','MPESA_CONSUMER_SECRET','MPESA_SHORTCODE','MPESA_PASSKEY','PUBLIC_BASE_URL'];
-    const missing = required.filter(k => !process.env[k]);
+    // fail fast if the base app config is missing (this part is still global,
+    // not per-owner — it's about where YOUR app is deployed, not any one till)
+    if (!process.env.PUBLIC_BASE_URL) {
+      console.error('Missing environment variable: PUBLIC_BASE_URL');
+      return res.status(500).json({ error: 'Server is missing PUBLIC_BASE_URL — set it in Vercel → Settings → Environment Variables, then redeploy.' });
+    }
+
+    // load THIS owner's own Daraja credentials from their profile row
+    const profRows = await sbFetch(`/profiles?id=eq.${ownerId}&select=*`);
+    const profile = (profRows && profRows[0]) || {};
+    const missing = missingMpesaFields(profile);
     if (missing.length) {
-      console.error('Missing environment variables:', missing.join(', '));
-      return res.status(500).json({ error: 'Server is missing M-Pesa config: ' + missing.join(', ') + ' — set these in Vercel → Settings → Environment Variables, then redeploy.' });
+      return res.status(400).json({ error: 'M-Pesa isn\u2019t set up yet \u2014 go to Settings \u2192 M-Pesa and add your ' + missing.join(', ') + '.' });
     }
 
     // normalize the phone number to 2547XXXXXXXX
@@ -92,12 +115,12 @@ async function handleInitiate(req, res) {
       return res.status(400).json({ error: "That phone number doesn't look valid for M-Pesa" });
     }
 
-    const baseUrl = process.env.MPESA_ENV === 'production'
+    const baseUrl = profile.mpesa_env === 'production'
       ? 'https://api.safaricom.co.ke'
       : 'https://sandbox.safaricom.co.ke';
 
-    // get a Daraja OAuth token
-    const authStr = Buffer.from(`${process.env.MPESA_CONSUMER_KEY}:${process.env.MPESA_CONSUMER_SECRET}`).toString('base64');
+    // get a Daraja OAuth token — using THIS owner's own key/secret
+    const authStr = Buffer.from(`${profile.mpesa_consumer_key}:${profile.mpesa_consumer_secret}`).toString('base64');
     const tokenRes = await fetch(`${baseUrl}/oauth/v1/generate?grant_type=client_credentials`, {
       headers: { Authorization: `Basic ${authStr}` },
     });
@@ -106,28 +129,28 @@ async function handleInitiate(req, res) {
     try { tokenData = JSON.parse(tokenRawText); }
     catch (e) {
       console.error('Daraja auth returned non-JSON. Status:', tokenRes.status, 'Body:', tokenRawText);
-      return res.status(502).json({ error: `M-Pesa auth failed (HTTP ${tokenRes.status}): ${tokenRawText || 'empty response — check MPESA_CONSUMER_KEY/SECRET are correct'}` });
+      return res.status(502).json({ error: `M-Pesa auth failed (HTTP ${tokenRes.status}): ${tokenRawText || 'empty response — check your Consumer Key/Secret in Settings \u2192 M-Pesa'}` });
     }
     if (!tokenData.access_token) {
       console.error('Daraja auth failed:', tokenData);
-      return res.status(502).json({ error: tokenData.error_description || tokenData.errorMessage || 'Could not authenticate with M-Pesa — check your Daraja credentials' });
+      return res.status(502).json({ error: tokenData.error_description || tokenData.errorMessage || 'Could not authenticate with M-Pesa — check your Daraja credentials in Settings \u2192 M-Pesa' });
     }
 
-    // build and send the STK push request
+    // build and send the STK push request — using THIS owner's own till/passkey
     const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
-    const password = Buffer.from(`${process.env.MPESA_SHORTCODE}${process.env.MPESA_PASSKEY}${timestamp}`).toString('base64');
+    const password = Buffer.from(`${profile.mpesa_shortcode}${profile.mpesa_passkey}${timestamp}`).toString('base64');
 
     const stkRes = await fetch(`${baseUrl}/mpesa/stkpush/v1/processrequest`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenData.access_token}` },
       body: JSON.stringify({
-        BusinessShortCode: process.env.MPESA_SHORTCODE,
+        BusinessShortCode: profile.mpesa_shortcode,
         Password: password,
         Timestamp: timestamp,
         TransactionType: 'CustomerPayBillOnline',
         Amount: Math.max(1, Math.round(amount)),
         PartyA: phoneDigits,
-        PartyB: process.env.MPESA_SHORTCODE,
+        PartyB: profile.mpesa_shortcode,
         PhoneNumber: phoneDigits,
         CallBackURL: `${process.env.PUBLIC_BASE_URL}/api/mpesa?action=callback`,
         AccountReference: idnum,
