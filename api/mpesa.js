@@ -8,35 +8,41 @@
 //   POST /api/mpesa                  → called by index.html to send an STK push
 //   POST /api/mpesa?action=callback  → called by Safaricom to confirm the result
 //
-// MULTI-TENANT: each business owner uses their OWN Daraja till/paybill, not a
-// shared one. Their Consumer Key/Secret, Shortcode, Passkey, and environment
-// (sandbox/production) live on their own `profiles` row in Supabase — set
-// from the app's Settings page — and are looked up per-request based on
-// whichever owner is actually signed in / whichever owner the transaction
-// belongs to. There is no single "the" till anymore.
+// SANDBOX vs PRODUCTION, per owner:
+//   - Sandbox: fully automatic, invisible to the owner. Uses YOUR OWN Daraja
+//     test credentials (env vars below) — nobody ever sees or sets these,
+//     there's nothing in Settings for it. This lets any owner test the app
+//     immediately with zero setup.
+//   - Production: each owner's OWN real till/paybill. Entered once in
+//     Settings → M-Pesa (handled by api/mpesa-settings.js, not this file),
+//     encrypted before storage, decrypted here only for the instant it's
+//     needed to call Daraja. Never sent back to any browser after saving.
 //
 // Why this can't be merged into index.html:
 //   1. Vercel only turns files inside an "api/" folder into live server
 //      addresses — merged into the HTML, this would just be inert text.
-//   2. It holds secret keys (Supabase service_role key, and now reads each
-//      owner's Daraja Consumer Secret from the database) that would be stolen
-//      instantly if they were in the browser's HTML.
+//   2. It holds secret keys (Supabase service_role key, your own sandbox
+//      Daraja secret, and the encryption key for owners' production secrets)
+//      that would be stolen instantly if they were in the browser's HTML.
 //
 // Deploy alongside (same folder structure):
 //   /index.html
-//   /api/mpesa.js   (this file)
+//   /api/mpesa.js            (this file)
+//   /api/mpesa-settings.js   (saves/encrypts production credentials)
+//   /lib/mpesaCrypto.js      (shared encrypt/decrypt helper)
 //   /package.json
 //
 // Required environment variables (Vercel → Project → Settings → Environment Variables):
-//   SUPABASE_URL                                — same URL used in the frontend
-//   SUPABASE_ANON_KEY                           — same anon key used in the frontend
-//   SUPABASE_SERVICE_ROLE_KEY                   — Supabase → Settings → API → service_role key (secret — never used in the frontend)
-//   PUBLIC_BASE_URL                             — your deployed site's URL, e.g. https://your-app.vercel.app
-//
-// NOT needed anymore as env vars — these now come from each owner's profile
-// row instead (set via Settings → M-Pesa in the app):
-//   MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_SHORTCODE, MPESA_PASSKEY, MPESA_ENV
+//   SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY  — Supabase access
+//   PUBLIC_BASE_URL                                             — your deployed site's URL
+//   MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET                   — YOUR OWN Daraja sandbox app
+//   MPESA_SHORTCODE, MPESA_PASSKEY                              — optional; defaults to
+//                                                                  Safaricom's public 174379 test till if unset
+//   MPESA_ENCRYPTION_KEY                                        — see lib/mpesaCrypto.js
 // ═══════════════════════════════════════════════════════════════════════════
+
+import { decrypt } from '../lib/mpesaCrypto.js';
+
 
 async function sbFetch(path, opts = {}) {
   const headers = {
@@ -67,13 +73,38 @@ function calcPrice(elapsedMs, profile) {
   return Math.round(price * 100) / 100;
 }
 
-// checks that an owner's profile actually has usable Daraja credentials set,
-// and returns a clear, specific message naming what's missing if not — this
-// is the #1 thing that goes wrong for a brand new owner who hasn't filled in
-// Settings → M-Pesa yet.
-function missingMpesaFields(profile) {
-  const need = { mpesa_consumer_key: 'Consumer Key', mpesa_consumer_secret: 'Consumer Secret', mpesa_shortcode: 'Till/Paybill number', mpesa_passkey: 'Passkey' };
-  return Object.keys(need).filter(k => !profile[k]).map(k => need[k]);
+// resolves which Daraja credentials to actually use for this request:
+//   - sandbox: always YOUR OWN server-side test credentials (env vars) — the
+//     owner never sees or sets anything for this, it just works.
+//   - production: THIS owner's own encrypted credentials, decrypted here only
+//     for the moment they're needed.
+// Returns { creds, error } — error is a user-facing message if something's missing.
+function resolveCredentials(profile) {
+  if (profile.mpesa_env === 'production') {
+    const need = { mpesa_consumer_key: 'Consumer Key', mpesa_consumer_secret: 'Consumer Secret', mpesa_shortcode: 'Till/Paybill number', mpesa_passkey: 'Passkey' };
+    const missing = Object.keys(need).filter(k => !profile[k]).map(k => need[k]);
+    if (missing.length) {
+      return { error: 'M-Pesa isn\u2019t set up yet \u2014 go to Settings \u2192 M-Pesa and add your ' + missing.join(', ') + '.' };
+    }
+    return { creds: {
+      consumerKey: decrypt(profile.mpesa_consumer_key),
+      consumerSecret: decrypt(profile.mpesa_consumer_secret),
+      shortcode: profile.mpesa_shortcode,
+      passkey: decrypt(profile.mpesa_passkey),
+    } };
+  }
+  // sandbox — fully automatic, using your own server credentials
+  const consumerKey = process.env.MPESA_CONSUMER_KEY;
+  const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
+  if (!consumerKey || !consumerSecret) {
+    console.error('Sandbox requested but MPESA_CONSUMER_KEY/MPESA_CONSUMER_SECRET are not set on the server.');
+    return { error: 'Sandbox testing isn\u2019t configured on the server yet \u2014 contact support.' };
+  }
+  return { creds: {
+    consumerKey, consumerSecret,
+    shortcode: process.env.MPESA_SHORTCODE || '174379',
+    passkey: process.env.MPESA_PASSKEY || 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919',
+  } };
 }
 
 // ── STK push initiation — called from the browser ──────────────────────────────
@@ -99,13 +130,11 @@ async function handleInitiate(req, res) {
       return res.status(500).json({ error: 'Server is missing PUBLIC_BASE_URL — set it in Vercel → Settings → Environment Variables, then redeploy.' });
     }
 
-    // load THIS owner's own Daraja credentials from their profile row
+    // load this owner's profile, then resolve which credentials to actually use
     const profRows = await sbFetch(`/profiles?id=eq.${ownerId}&select=*`);
     const profile = (profRows && profRows[0]) || {};
-    const missing = missingMpesaFields(profile);
-    if (missing.length) {
-      return res.status(400).json({ error: 'M-Pesa isn\u2019t set up yet \u2014 go to Settings \u2192 M-Pesa and add your ' + missing.join(', ') + '.' });
-    }
+    const { creds, error: credError } = resolveCredentials(profile);
+    if (credError) return res.status(400).json({ error: credError });
 
     // normalize the phone number to 2547XXXXXXXX
     let phoneDigits = String(phone).replace(/\D/g, '');
@@ -119,8 +148,8 @@ async function handleInitiate(req, res) {
       ? 'https://api.safaricom.co.ke'
       : 'https://sandbox.safaricom.co.ke';
 
-    // get a Daraja OAuth token — using THIS owner's own key/secret
-    const authStr = Buffer.from(`${profile.mpesa_consumer_key}:${profile.mpesa_consumer_secret}`).toString('base64');
+    // get a Daraja OAuth token
+    const authStr = Buffer.from(`${creds.consumerKey}:${creds.consumerSecret}`).toString('base64');
     const tokenRes = await fetch(`${baseUrl}/oauth/v1/generate?grant_type=client_credentials`, {
       headers: { Authorization: `Basic ${authStr}` },
     });
@@ -136,21 +165,21 @@ async function handleInitiate(req, res) {
       return res.status(502).json({ error: tokenData.error_description || tokenData.errorMessage || 'Could not authenticate with M-Pesa — check your Daraja credentials in Settings \u2192 M-Pesa' });
     }
 
-    // build and send the STK push request — using THIS owner's own till/passkey
+    // build and send the STK push request
     const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
-    const password = Buffer.from(`${profile.mpesa_shortcode}${profile.mpesa_passkey}${timestamp}`).toString('base64');
+    const password = Buffer.from(`${creds.shortcode}${creds.passkey}${timestamp}`).toString('base64');
 
     const stkRes = await fetch(`${baseUrl}/mpesa/stkpush/v1/processrequest`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tokenData.access_token}` },
       body: JSON.stringify({
-        BusinessShortCode: profile.mpesa_shortcode,
+        BusinessShortCode: creds.shortcode,
         Password: password,
         Timestamp: timestamp,
         TransactionType: 'CustomerPayBillOnline',
         Amount: Math.max(1, Math.round(amount)),
         PartyA: phoneDigits,
-        PartyB: profile.mpesa_shortcode,
+        PartyB: creds.shortcode,
         PhoneNumber: phoneDigits,
         CallBackURL: `${process.env.PUBLIC_BASE_URL}/api/mpesa?action=callback`,
         AccountReference: idnum,
@@ -300,35 +329,9 @@ async function handleCallback(req, res) {
   }
 }
 
-// ── returns whatever MPESA_* sandbox values are already sitting in Vercel env
-// vars, so Settings → M-Pesa → "Fill sandbox test values" can pull them in
-// instead of making you retype them. Sandbox only — production credentials
-// are never handed back this way, those stay per-owner in Supabase only. ───
-async function handleSandboxDefaults(req, res) {
-  try {
-    const { accessToken } = req.body || {};
-    if (!accessToken) return res.status(401).json({ error: 'Please log in again' });
-    const userRes = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
-      headers: { Authorization: `Bearer ${accessToken}`, apikey: process.env.SUPABASE_ANON_KEY },
-    });
-    if (!userRes.ok) return res.status(401).json({ error: 'Invalid session — please log in again' });
-
-    return res.status(200).json({
-      consumerKey: process.env.MPESA_CONSUMER_KEY || '',
-      consumerSecret: process.env.MPESA_CONSUMER_SECRET || '',
-      shortcode: process.env.MPESA_SHORTCODE || '174379',
-      passkey: process.env.MPESA_PASSKEY || 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919',
-    });
-  } catch (err) {
-    console.error('mpesa sandbox-defaults error:', err);
-    return res.status(500).json({ error: 'Server error: ' + err.message });
-  }
-}
-
 // ── router ──────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   if (req.query.action === 'callback') return handleCallback(req, res);
-  if (req.query.action === 'sandbox-defaults') return handleSandboxDefaults(req, res);
   return handleInitiate(req, res);
 }
