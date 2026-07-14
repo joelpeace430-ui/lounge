@@ -38,11 +38,29 @@
 //   MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET                   — YOUR OWN Daraja sandbox app
 //   MPESA_SHORTCODE, MPESA_PASSKEY                              — optional; defaults to
 //                                                                  Safaricom's public 174379 test till if unset
-//   MPESA_ENCRYPTION_KEY                                        — see lib/mpesaCrypto.js
+//   MPESA_ENCRYPTION_KEY                                        — a 32-byte key, base64-encoded.
+//     Generate one with: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { decrypt } from '../lib/mpesaCrypto.js';
+import crypto from 'crypto';
 
+// Decrypts AES-256-GCM values saved by api/mpesa-settings.js. Deliberately
+// inlined here (not imported from a shared /lib file) — Vercel's per-function
+// bundler doesn't reliably trace relative imports that reach outside a
+// function's own folder in a plain (no build step) project, which caused
+// "Cannot find module" crashes in production. Duplicating ~15 lines is a much
+// smaller cost than an entire endpoint going down.
+function decrypt(stored) {
+  if (!stored) return '';
+  const [ivB64, tagB64, ctB64] = String(stored).split(':');
+  if (!ivB64 || !tagB64 || !ctB64) return '';
+  const key = Buffer.from(process.env.MPESA_ENCRYPTION_KEY || '', 'base64');
+  if (key.length !== 32) throw new Error('MPESA_ENCRYPTION_KEY must decode to exactly 32 bytes');
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(ivB64, 'base64'));
+  decipher.setAuthTag(Buffer.from(tagB64, 'base64'));
+  const plaintext = Buffer.concat([decipher.update(Buffer.from(ctB64, 'base64')), decipher.final()]);
+  return plaintext.toString('utf8');
+}
 
 async function sbFetch(path, opts = {}) {
   const headers = {
