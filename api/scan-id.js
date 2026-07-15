@@ -1,27 +1,4 @@
-// ═══════════════════════════════════════════════════════════════════════════
-// LOUNGE MANAGER — ID card reading backend
-// ═══════════════════════════════════════════════════════════════════════════
-// This file exists so the browser never sees which AI vendor/model reads the
-// ID cards, what the prompt is, or any API key. Previously the frontend
-// called the vendor's API directly with a per-owner key pasted into Settings
-// — anyone could open dev tools → Network tab and see exactly which service
-// and model was being used. Now the browser only ever talks to YOUR domain
-// (/api/scan-id), and this file does the actual vendor call server-side.
-//
-// One shared key for the whole app (not per-owner) — set as a Vercel env var,
-// never exposed to any browser.
-//
-// Deploy alongside:
-//   /index.html
-//   /api/mpesa.js
-//   /api/scan-id.js   (this file)
-//   /package.json
-//
-// Required environment variable (Vercel → Project → Settings → Environment Variables):
-//   GROQ_API_KEY       — your Groq key, from console.groq.com/keys
-//   SUPABASE_URL        — same URL used in the frontend
-//   SUPABASE_ANON_KEY   — same anon key used in the frontend
-// ═══════════════════════════════════════════════════════════════════════════
+
 
 const PROMPT = 'This is a Kenyan national ID card photo.\n\nYour job is to READ and COPY text exactly as printed — do NOT guess, infer, or autocorrect anything.\n\nIMPORTANT — there are TWO different numbers on this card and they are easy to mix up:\n1. A short document/serial number — often near the top of the card, sometimes right next to or above the photo. This is NOT what we want.\n2. The actual ID NUMBER — labelled "ID NUMBER" or "NAMBARI YA KITAMBULISHO" (Swahili). This is what we want.\n\nThese two numbers can appear on the SAME row near the top of the card, one on the left and one on the right — do not assume the ID number is whichever one you see first or whichever is more prominent. Find the literal label text "ID NUMBER" / "NAMBARI YA KITAMBULISHO" printed on the card, then read ONLY the digits printed immediately next to or below that specific label. Ignore any other number on the card, no matter where it is positioned.\n\nExtract:\n1. Full name: printed in bold capitals, labelled JINA/NAME. Copy every letter exactly as you see it.\n2. National ID number: exactly 8 digits, found next to the "ID NUMBER"/"NAMBARI YA KITAMBULISHO" label specifically — never the serial/document number.\n\nRules:\n- If you are not 100% certain of a character, write UNKNOWN for that field\n- Never guess or fill in missing characters\n- The ID number must be exactly 8 digits — if what is next to the ID NUMBER label is not 8 digits, write UNKNOWN\n- If you cannot clearly identify which number is labelled as the ID number, write UNKNOWN rather than picking the closest-looking number\n\nReply ONLY in this exact format:\nNAME: <name or UNKNOWN>\nID: <8 digits or UNKNOWN>';
 
