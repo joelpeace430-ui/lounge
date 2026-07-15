@@ -687,11 +687,284 @@ body.dark{
 .pm-waiting-spinner{display:flex;justify-content:center;padding:20px 0 10px;}
 .pm-waiting-spinner .sdot{width:14px;height:14px;background:var(--green);}
 .pm-waiting-text{text-align:center;font-size:13px;color:var(--ink2);margin-bottom:14px;line-height:1.6;}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   HOME / LANDING PAGE — shown first, before sign-in. Dark theme matches
+   the auth screen exactly (#0d0d0d) so it reads as the same product, not
+   a bolted-on marketing page. Green = money/M-Pesa (already the app's own
+   meaning for it throughout); blue is new here, used only for "session/
+   live" moments — the two colors map to the app's two real concerns:
+   getting paid, and tracking time.
+   ═══════════════════════════════════════════════════════════════════════ */
+.lp{--lp-blue:#3aa0ff;--lp-blue-bg:rgba(58,160,255,.12);--lp-blue-border:rgba(58,160,255,.28);
+  background:#0d0d0d;color:#f5f5f7;min-height:100vh;font-family:var(--sans);}
+.lp *{box-sizing:border-box;}
+.lp-inner{max-width:1080px;margin:0 auto;padding:0 24px;}
+.lp-nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0;}
+.lp-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:-.01em;}
+.lp-logo-mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--lp-blue),#32d74b);
+  display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.lp-nav-signin{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#f5f5f7;
+  padding:9px 18px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);
+  transition:background .18s;}
+.lp-nav-signin:hover{background:rgba(255,255,255,.1);}
+
+/* hero */
+.lp-hero{display:grid;grid-template-columns:1.1fr 1fr;gap:56px;align-items:center;padding:60px 0 90px;}
+.lp-eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.09em;
+  text-transform:uppercase;color:#32d74b;background:rgba(50,215,75,.12);border:1px solid rgba(50,215,75,.25);
+  padding:6px 12px;border-radius:99px;margin-bottom:20px;}
+.lp-h1{font-size:44px;line-height:1.08;font-weight:800;letter-spacing:-.025em;margin:0 0 18px;}
+.lp-h1 em{font-style:normal;color:#32d74b;}
+.lp-sub{font-size:16px;line-height:1.65;color:#a3a3ab;margin:0 0 30px;max-width:460px;}
+.lp-cta-row{display:flex;gap:12px;flex-wrap:wrap;}
+.lp-cta-primary{background:#32d74b;color:#08290f;border:none;padding:14px 24px;border-radius:11px;
+  font-size:14.5px;font-weight:700;cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:8px;
+  transition:transform .15s,box-shadow .15s;box-shadow:0 8px 24px rgba(50,215,75,.25);}
+.lp-cta-primary:hover{transform:translateY(-1px);box-shadow:0 10px 28px rgba(50,215,75,.32);}
+.lp-cta-secondary{background:transparent;color:#f5f5f7;border:1px solid rgba(255,255,255,.16);padding:14px 22px;
+  border-radius:11px;font-size:14.5px;font-weight:600;cursor:pointer;font-family:var(--sans);
+  display:flex;align-items:center;gap:8px;transition:background .15s;}
+.lp-cta-secondary:hover{background:rgba(255,255,255,.06);}
+
+/* live demo card — the signature element */
+.lp-demo-wrap{position:relative;}
+.lp-demo-card{background:#16171a;border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:22px;
+  box-shadow:0 24px 64px rgba(0,0,0,.5);}
+.lp-demo-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.lp-demo-title{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#6e6e73;}
+.lp-demo-live{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#32d74b;}
+.lp-demo-live-dot{width:7px;height:7px;border-radius:50%;background:#32d74b;animation:lpPulse 1.4s ease-in-out infinite;}
+@keyframes lpPulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(50,215,75,.5);}50%{opacity:.6;box-shadow:0 0 0 6px rgba(50,215,75,0);}}
+.lp-demo-row{display:flex;align-items:center;gap:12px;padding:12px;background:#1c1d21;border-radius:12px;margin-bottom:10px;}
+.lp-demo-avatar{width:34px;height:34px;border-radius:10px;background:var(--lp-blue-bg);border:1px solid var(--lp-blue-border);
+  color:var(--lp-blue);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+.lp-demo-info{flex:1;min-width:0;}
+.lp-demo-name{font-size:13px;font-weight:600;color:#f5f5f7;}
+.lp-demo-sub{font-size:11px;color:#6e6e73;margin-top:2px;}
+.lp-demo-timer{font-family:var(--mono);font-size:13px;font-weight:600;color:#a3a3ab;font-variant-numeric:tabular-nums;}
+.lp-demo-cost{font-family:var(--mono);font-size:14px;font-weight:700;color:#32d74b;font-variant-numeric:tabular-nums;margin-top:2px;}
+.lp-demo-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;background:rgba(255,159,10,.14);
+  color:#ff9f0a;border:1px solid rgba(255,159,10,.28);flex-shrink:0;}
+.lp-demo-foot{display:flex;align-items:center;justify-content:space-between;padding-top:14px;margin-top:4px;
+  border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:#6e6e73;}
+.lp-demo-foot b{color:#32d74b;font-family:var(--mono);}
+
+/* problem section */
+.lp-section{padding:70px 0;}
+.lp-section-head{text-align:center;max-width:560px;margin:0 auto 44px;}
+.lp-kicker{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--lp-blue);margin-bottom:12px;}
+.lp-h2{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:0 0 12px;}
+.lp-h2-sub{font-size:15px;color:#a3a3ab;line-height:1.6;margin:0;}
+.lp-problem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.lp-problem-card{background:#16171a;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:22px;}
+.lp-problem-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#ff453a;
+  background:rgba(255,69,58,.12);border:1px solid rgba(255,69,58,.26);padding:5px 10px;border-radius:99px;margin-bottom:14px;}
+.lp-problem-card h3{font-size:15px;font-weight:700;margin:0 0 8px;color:#f5f5f7;}
+.lp-problem-card p{font-size:13px;color:#a3a3ab;line-height:1.6;margin:0;}
+
+/* feature mockups */
+.lp-feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.lp-feat-card{background:#16171a;border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden;}
+.lp-feat-mock{padding:18px;background:#1c1d21;border-bottom:1px solid rgba(255,255,255,.06);min-height:140px;}
+.lp-feat-body{padding:18px;}
+.lp-feat-body h3{font-size:14px;font-weight:700;margin:0 0 6px;}
+.lp-feat-body p{font-size:12.5px;color:#a3a3ab;line-height:1.6;margin:0;}
+.lp-mock-line{display:flex;align-items:center;justify-content:space-between;padding:7px 9px;background:#16171a;
+  border-radius:8px;margin-bottom:6px;font-size:11px;}
+.lp-mock-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-right:7px;}
+.lp-mock-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.lp-mock-cal div{aspect-ratio:1;border-radius:5px;background:#16171a;font-size:9px;display:flex;align-items:center;justify-content:center;color:#6e6e73;}
+.lp-mock-cal div.hit{background:rgba(255,69,58,.18);color:#ff453a;font-weight:700;box-shadow:0 0 0 1px rgba(255,69,58,.4);}
+
+/* whatsapp CTA band */
+.lp-wa-band{background:linear-gradient(135deg,rgba(50,215,75,.1),rgba(58,160,255,.08));border:1px solid rgba(50,215,75,.2);
+  border-radius:20px;padding:40px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;}
+.lp-wa-band h3{font-size:20px;font-weight:800;margin:0 0 6px;letter-spacing:-.01em;}
+.lp-wa-band p{font-size:13.5px;color:#a3a3ab;margin:0;}
+.lp-wa-btn{background:#25D366;color:#08290f;border:none;padding:14px 24px;border-radius:11px;font-size:14px;
+  font-weight:700;cursor:pointer;display:flex;align-items:center;gap:9px;text-decoration:none;flex-shrink:0;
+  transition:transform .15s;}
+.lp-wa-btn:hover{transform:translateY(-1px);}
+
+/* faq */
+.lp-faq{max-width:680px;margin:0 auto;}
+.lp-faq-item{border-bottom:1px solid rgba(255,255,255,.09);}
+.lp-faq-q{width:100%;text-align:left;background:none;border:none;color:#f5f5f7;font-size:14.5px;font-weight:600;
+  padding:18px 4px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:var(--sans);}
+.lp-faq-icon{color:#6e6e73;transition:transform .2s;flex-shrink:0;}
+.lp-faq-item.open .lp-faq-icon{transform:rotate(45deg);color:#32d74b;}
+.lp-faq-a{max-height:0;overflow:hidden;transition:max-height .25s var(--ease);}
+.lp-faq-item.open .lp-faq-a{max-height:200px;}
+.lp-faq-a p{font-size:13.5px;color:#a3a3ab;line-height:1.65;margin:0 4px 18px;}
+
+.lp-footer{border-top:1px solid rgba(255,255,255,.08);padding:28px 0;display:flex;align-items:center;
+  justify-content:space-between;font-size:12px;color:#6e6e73;flex-wrap:wrap;gap:10px;}
+
+@media(max-width:820px){
+  .lp-hero{grid-template-columns:1fr;gap:40px;padding:36px 0 56px;}
+  .lp-h1{font-size:32px;}
+  .lp-problem-grid,.lp-feat-grid{grid-template-columns:1fr;}
+  .lp-wa-band{flex-direction:column;align-items:flex-start;}
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<div id="auth-wrap" class="auth-wrap">
+<div id="home-landing" class="lp">
+  <div class="lp-inner">
+    <nav class="lp-nav">
+      <div class="lp-logo"><span class="lp-logo-mark">🚲</span>RentManager</div>
+      <button class="lp-nav-signin" onclick="showAuthFromLanding()">Sign in</button>
+    </nav>
+
+    <section class="lp-hero">
+      <div>
+        <div class="lp-eyebrow"><i class="ti ti-bolt"></i>Built for Kenyan bike rental businesses</div>
+        <h1 class="lp-h1">Stop losing money to <em>unpaid rentals</em> and forgotten debts.</h1>
+        <p class="lp-sub">The timer starts the second a bike goes out. M-Pesa payment happens right there when it comes back. Nobody's balance gets forgotten — because the app remembers, even when you're busy.</p>
+        <div class="lp-cta-row">
+          <button class="lp-cta-primary" onclick="showAuthFromLanding('signup')"><i class="ti ti-rocket"></i>Get started free</button>
+          <button class="lp-cta-secondary" onclick="showAuthFromLanding('login')"><i class="ti ti-login"></i>Sign in</button>
+        </div>
+      </div>
+      <div class="lp-demo-wrap">
+        <div class="lp-demo-card">
+          <div class="lp-demo-head">
+            <div class="lp-demo-title">Active rentals</div>
+            <div class="lp-demo-live"><span class="lp-demo-live-dot"></span>LIVE</div>
+          </div>
+          <div class="lp-demo-row">
+            <div class="lp-demo-avatar">DK</div>
+            <div class="lp-demo-info">
+              <div class="lp-demo-name">David K.</div>
+              <div class="lp-demo-sub">Mountain Bike #7 · Booked 3h</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="lp-demo-timer" id="lp-demo-timer">00:00</div>
+              <div class="lp-demo-cost" id="lp-demo-cost">KSh 0</div>
+            </div>
+            <span class="lp-demo-badge">Active</span>
+          </div>
+          <div class="lp-demo-foot">
+            <span>Today's total</span>
+            <b id="lp-demo-total">KSh 0</b>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lp-section">
+      <div class="lp-section-head">
+        <div class="lp-kicker">The problem</div>
+        <h2 class="lp-h2">You know this routine</h2>
+        <p class="lp-h2-sub">A notebook, a bit of memory, and a customer who "will pay next time."</p>
+      </div>
+      <div class="lp-problem-grid">
+        <div class="lp-problem-card">
+          <div class="lp-problem-badge"><i class="ti ti-notebook"></i>Manual tracking</div>
+          <h3>Notebooks lose money</h3>
+          <p>A crossed-out line, a torn page, a rental nobody wrote down — it adds up faster than you'd think.</p>
+        </div>
+        <div class="lp-problem-card">
+          <div class="lp-problem-badge"><i class="ti ti-clock-exclamation"></i>Forgotten returns</div>
+          <h3>The bike nobody's watching</h3>
+          <p>A bike that's been out for hours longer than it should doesn't come back cheaper on its own — and neither does the argument later.</p>
+        </div>
+        <div class="lp-problem-card">
+          <div class="lp-problem-badge"><i class="ti ti-cash-off"></i>Who owes what</div>
+          <h3>Debt, from memory</h3>
+          <p>By closing time, "I think it was Ken and that other guy" isn't a real answer to who still owes you.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="lp-section">
+      <div class="lp-section-head">
+        <div class="lp-kicker">What you get</div>
+        <h2 class="lp-h2">The actual dashboard</h2>
+        <p class="lp-h2-sub">Not mockups — this is the same interface you'll use every day.</p>
+      </div>
+      <div class="lp-feat-grid">
+        <div class="lp-feat-card">
+          <div class="lp-feat-mock">
+            <div class="lp-mock-line"><span style="display:flex;align-items:center;"><span class="lp-mock-dot" style="background:#ff453a;"></span>Faith A.</span><b style="color:#ff453a;">KSh 350</b></div>
+            <div class="lp-mock-line"><span style="display:flex;align-items:center;"><span class="lp-mock-dot" style="background:#ff453a;"></span>Brian M.</span><b style="color:#ff453a;">KSh 120</b></div>
+            <div class="lp-mock-line" style="opacity:.5;"><span style="display:flex;align-items:center;"><span class="lp-mock-dot" style="background:#32d74b;"></span>Paid up</span><span>—</span></div>
+          </div>
+          <div class="lp-feat-body">
+            <h3>Debt, tracked automatically</h3>
+            <p>Every unpaid balance shows up on its own list, with the date it started — nothing relies on memory.</p>
+          </div>
+        </div>
+        <div class="lp-feat-card">
+          <div class="lp-feat-mock">
+            <div class="lp-mock-cal">
+              <div>M</div><div>T</div><div class="hit">W</div><div>T</div><div>F</div><div class="hit">S</div><div>S</div>
+              <div>1</div><div>2</div><div class="hit">3</div><div>4</div><div>5</div><div class="hit">6</div><div>7</div>
+              <div>8</div><div>9</div><div>10</div><div>11</div><div>12</div><div>13</div><div>14</div>
+            </div>
+          </div>
+          <div class="lp-feat-body">
+            <h3>See it on a calendar</h3>
+            <p>Days with unpaid debt are marked red at a glance — click in to see exactly who and how much.</p>
+          </div>
+        </div>
+        <div class="lp-feat-card">
+          <div class="lp-feat-mock" style="display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;">
+            <i class="ti ti-brand-android" style="font-size:28px;color:#32d74b;"></i>
+            <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:#32d74b;">KSh 200</div>
+            <div style="font-size:10px;color:#6e6e73;">STK push sent to 07XX XXX XXX</div>
+          </div>
+          <div class="lp-feat-body">
+            <h3>M-Pesa, built in</h3>
+            <p>Send a payment prompt the moment a bike comes back — your own till, your own money, no middleman.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lp-section" style="padding-top:0;">
+      <div class="lp-wa-band">
+        <div>
+          <h3>Questions before you switch?</h3>
+          <p>Chat with us directly on WhatsApp — real answers, no forms.</p>
+        </div>
+        <!-- TODO: replace 254700000000 with your real WhatsApp number -->
+        <a class="lp-wa-btn" href="https://wa.me/254700000000" target="_blank" rel="noopener"><i class="ti ti-brand-whatsapp" style="font-size:18px;"></i>Chat on WhatsApp</a>
+      </div>
+    </section>
+
+    <section class="lp-section">
+      <div class="lp-section-head">
+        <div class="lp-kicker">FAQ</div>
+        <h2 class="lp-h2">Before you ask</h2>
+      </div>
+      <div class="lp-faq">
+        <div class="lp-faq-item open">
+          <button class="lp-faq-q" onclick="this.parentElement.classList.toggle('open')">Does it work if the internet goes down?<i class="ti ti-plus lp-faq-icon"></i></button>
+          <div class="lp-faq-a"><p>Sessions and timers keep running locally either way. M-Pesa payments need a connection to actually reach Safaricom, same as any till would.</p></div>
+        </div>
+        <div class="lp-faq-item">
+          <button class="lp-faq-q" onclick="this.parentElement.classList.toggle('open')">I don't have an M-Pesa business till yet — can I still use this?<i class="ti ti-plus lp-faq-icon"></i></button>
+          <div class="lp-faq-a"><p>Yes — you can start testing immediately in Sandbox mode with zero setup, and switch to your real till whenever it's ready.</p></div>
+        </div>
+        <div class="lp-faq-item">
+          <button class="lp-faq-q" onclick="this.parentElement.classList.toggle('open')">Can I try it before committing to anything?<i class="ti ti-plus lp-faq-icon"></i></button>
+          <div class="lp-faq-a"><p>Create an account and you're straight into the real dashboard — no card, no waiting.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="lp-footer">
+      <span>© <span id="lp-year"></span> RentManager</span>
+      <!-- TODO: replace 254700000000 with your real WhatsApp number -->
+      <a href="https://wa.me/254700000000" target="_blank" rel="noopener" style="color:#6e6e73;text-decoration:none;">WhatsApp us</a>
+    </footer>
+  </div>
+</div>
+
+<div id="auth-wrap" class="auth-wrap" style="display:none;">
 
   <!-- LEFT PANEL -->
   <div class="auth-left">
@@ -980,7 +1253,7 @@ body.dark{
                   <th style="width:95px;">Paid</th>
                   <th style="width:95px;">Debt</th>
                   <th style="width:100px;">Status</th>
-                  <th style="width:95px;">Action</th>
+                  <th style="width:155px;">Action</th>
                 </tr>
               </thead>
               <tbody id="recent-tb">
@@ -1023,7 +1296,7 @@ body.dark{
               <th style="width:95px;">Paid</th>
               <th style="width:95px;">Debt</th>
               <th style="width:100px;">Status</th>
-              <th style="width:95px;">Action</th>
+              <th style="width:155px;">Action</th>
             </tr>
           </thead>
           <tbody id="sessions-tb">
@@ -1474,6 +1747,26 @@ body.dark{
     <button class="pm-confirm-btn" style="background:var(--red);" onclick="ownerOverrideSignIn()"><i class="ti ti-shield-check"></i> Owner override — allow sign in anyway</button>
   </div>
 </div>
+
+<!-- generic confirm/alert modal — replaces every native confirm()/alert() in the app -->
+<div class="payment-modal-overlay" id="generic-modal" style="display:none;">
+  <div class="payment-modal">
+    <div class="pm-head">
+      <div class="pm-head-title" id="gm-title">Are you sure?</div>
+      <button class="pm-close" onclick="closeGenericModal(false)"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <div id="gm-icon-circle" style="width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <i class="ti" id="gm-icon"></i>
+      </div>
+      <div class="pm-summary" style="flex:1;margin:0;">
+        <p style="font-size:13px;color:var(--ink2);line-height:1.6;margin:0;" id="gm-message"></p>
+      </div>
+    </div>
+    <button class="pm-back-btn" id="gm-cancel-btn" onclick="closeGenericModal(false)" style="background:var(--surface2);border:1px solid var(--line2);margin-bottom:8px;">Cancel</button>
+    <button class="pm-confirm-btn" id="gm-confirm-btn" onclick="closeGenericModal(true)">OK</button>
+  </div>
+</div>
 </div><!-- /dashboard -->
 
 <script>
@@ -1655,7 +1948,7 @@ async function savePricing(){
   const {error}=await sb.from('profiles').upsert({id:currentUserId,name:(document.getElementById('owner-name')?.textContent||'Owner'),rate_per_hour:rate,min_charge:minCharge,round_mode:round});
   if(error){
     console.error('savePricing failed:',error.message);
-    alert('Could not save pricing: '+error.message);
+    showAlertModal('Could not save pricing: '+error.message,{title:'Save failed',danger:true});
   }
 }
 function loadPricingFields(){
@@ -1719,7 +2012,7 @@ async function saveMpesaSettings(){
   const env=document.getElementById('mpesa-env-input').value||'sandbox';
   const msg=document.getElementById('mpesa-saved-msg');
   const {data:{session}}=await sb.auth.getSession();
-  if(!session){ alert('Please log in again.'); return; }
+  if(!session){ showAlertModal('Please log in again.',{title:'Session expired',danger:true}); return; }
 
   const body={
     accessToken:session.access_token, env,
@@ -1744,7 +2037,7 @@ async function saveMpesaSettings(){
   });
   const d=await res.json();
   if(!res.ok){
-    alert('Could not save M-Pesa settings: '+(d.error||'unknown error'));
+    showAlertModal('Could not save M-Pesa settings: '+(d.error||'unknown error'),{title:'Save failed',danger:true});
     return;
   }
   await loadMpesaFields(); // refresh status so the masked "saved" state reflects reality
@@ -1823,7 +2116,13 @@ function setResetModeUI(mode){
 async function manualResetToday(){
   const mode=getResetMode();
   const willClear=mode==='clear';
-  if(!confirm(`Finalize today's total${willClear?' and clear all of today\'s sessions (customers who still owe money are kept)':' (sessions will be kept)'}?`))return;
+  const ok=await showConfirmModal({
+    title:'Finalize today\u2019s total?',
+    message:`This locks in today's revenue${willClear?' and clears all of today\u2019s sessions (customers who still owe money are kept).':' (sessions will be kept as-is).'}`,
+    confirmText:'Finalize',
+    icon:'ti-calendar-check'
+  });
+  if(!ok)return;
   const today=todayKey();
   const stats=await finalizeDay(today);
   if(willClear){
@@ -1836,7 +2135,7 @@ async function manualResetToday(){
   }
   renderDailyHistory();
   updateTodayLiveTotal();
-  alert(`Today's total: ${fmtPrice(stats.revenue)} from ${stats.customers} customer${stats.customers!==1?'s':''}.`+(willClear?' Sessions cleared (anyone with outstanding debt was kept).':' Sessions kept.'));
+  showAlertModal(`<strong style="color:var(--green);">${fmtPrice(stats.revenue)}</strong> from ${stats.customers} customer${stats.customers!==1?'s':''}.`+(willClear?' Sessions cleared (anyone with outstanding debt was kept).':' Sessions kept.'),{title:'Today\u2019s total finalized',icon:'ti-check'});
 }
 
 function updateTodayLiveTotal(){
@@ -2222,11 +2521,11 @@ async function manualSignToggle(){
   const idnum=prompt('Enter customer ID number:');
   if(idnum===null) return;
   const idTrim=idnum.trim();
-  if(!idTrim){ alert('ID number required'); return; }
+  if(!idTrim){ showAlertModal('ID number required',{title:'Missing info',danger:true}); return; }
 
   const existing=sessions.find(s=>!s.signedOut && s.idnum.toLowerCase()===idTrim.toLowerCase());
   if(existing){
-    if(!confirm('Sign out '+existing.name+' ('+idTrim+')?')) return;
+    if(!await showConfirmModal({title:'Sign out?',message:'Sign out <strong>'+existing.name+'</strong> ('+idTrim+')?',confirmText:'Sign out',icon:'ti-logout'})) return;
     switchView('sessions');
     performSignOut(existing);
     return;
@@ -2236,17 +2535,18 @@ async function manualSignToggle(){
   const debtAmt=getDebt(idTrim);
   if(debtAmt>0.01){
     const known=customerDirectory[idTrim.toLowerCase()];
-    const ownerAllows=confirm(
-      (known?known.name:idTrim)+' owes '+fmtPrice(debtAmt)+' from a previous visit and is blocked from signing in.\n\n'+
-      'Only the owner should approve letting them in anyway. Tap OK to override, or Cancel to stop.'
-    );
+    const ownerAllows=await showConfirmModal({
+      title:'Sign-in blocked \u2014 owes debt',
+      message:'<strong>'+(known?known.name:idTrim)+'</strong> owes <strong style="color:var(--red);">'+fmtPrice(debtAmt)+'</strong> from a previous visit and is blocked from signing in.<br><br>Only the owner should approve letting them in anyway.',
+      confirmText:'Allow anyway',danger:true,icon:'ti-shield-check'
+    });
     if(!ownerAllows) return;
   }
 
   const name=prompt('Enter customer name:');
   if(name===null) return;
   const nameTrim=name.trim();
-  if(!nameTrim){ alert('Name required'); return; }
+  if(!nameTrim){ showAlertModal('Name required',{title:'Missing info',danger:true}); return; }
 
   const phone=prompt('Enter customer phone number (optional):');
   if(phone===null) return;
@@ -2255,14 +2555,14 @@ async function manualSignToggle(){
   const hoursStr=prompt('Enter session duration (hours):','1');
   if(hoursStr===null) return;
   const hours=parseFloat(hoursStr);
-  if(!hours||hours<0.5){ alert('Enter a valid number of hours'); return; }
+  if(!hours||hours<0.5){ showAlertModal('Enter a valid number of hours',{title:'Invalid input',danger:true}); return; }
 
   const durationMs=hours*3600000;
   const nowIso=new Date().toISOString();
   const {data,error}=await sb.from('sessions').insert({
     owner_id:currentUserId,name:nameTrim,idnum:idTrim,phone:phoneTrim,start_time:nowIso,signed_out:false,duration_ms:durationMs
   }).select().single();
-  if(error){ alert('Could not save sign-in: '+error.message); return; }
+  if(error){ showAlertModal('Could not save sign-in: '+error.message,{title:'Save failed',danger:true}); return; }
   sessions.unshift(dbRowToSession(data));
   saveToDirectory(idTrim,nameTrim,phoneTrim);
   beep(660,0.1);
@@ -2381,7 +2681,7 @@ const LARGE_CASH_THRESHOLD=10000;
 async function confirmCashPayment(){
   if(!pendingPayment)return;
   let paid=parseFloat(document.getElementById('pm-cash-amount').value);
-  if(isNaN(paid)||paid<0){alert('Enter a valid amount');return;}
+  if(isNaN(paid)||paid<0){showAlertModal('Enter a valid amount',{title:'Invalid amount',danger:true});return;}
 
   if(paid>LARGE_CASH_THRESHOLD){
     document.getElementById('pm-large-amount').textContent=fmtPrice(paid);
@@ -2415,7 +2715,7 @@ async function sendMpesaSignOutPrompt(){
   if(!pendingPayment)return;
   const p=pendingPayment;
   const phone=document.getElementById('pm-mpesa-phone').value.trim();
-  if(!phone){alert('Enter the customer\'s M-Pesa phone number');return;}
+  if(!phone){showAlertModal('Enter the customer\'s M-Pesa phone number',{title:'Missing info',danger:true});return;}
   const amount=p.kind==='signout'?p.totalDue:p.owed;
   const idnum=p.kind==='signout'?p.existing.idnum:p.idnum;
   const sessionId=p.kind==='signout'?p.existing.id:null;
@@ -2430,14 +2730,14 @@ async function sendMpesaSignOutPrompt(){
     });
     const data=await res.json();
     btn.disabled=false;btn.textContent='Send M-Pesa prompt';
-    if(!res.ok){ alert(data.error||'Could not send the M-Pesa prompt'); return; }
+    if(!res.ok){ showAlertModal(data.error||'Could not send the M-Pesa prompt',{title:'M-Pesa error',danger:true}); return; }
     document.getElementById('pm-waiting-text').textContent='Waiting for '+name+' to enter their M-Pesa PIN...';
     document.getElementById('pm-waiting-retry').style.display='none';
     showPaymentStep('waiting');
     watchMpesaTransaction(data.checkoutRequestId);
   }catch(e){
     btn.disabled=false;btn.textContent='Send M-Pesa prompt';
-    alert('Could not reach the payment server: '+e.message);
+    showAlertModal('Could not reach the payment server: '+e.message,{title:'Connection error',danger:true});
   }
 }
 
@@ -2565,7 +2865,7 @@ async function doSignIn(){
   const name=document.getElementById('inp-name').value.trim();
   const idnum=document.getElementById('inp-id').value.trim();
   const phone=document.getElementById('inp-phone').value.trim();
-  if(!name||!idnum){alert('Name and ID required');return;}
+  if(!name||!idnum){showAlertModal('Name and ID required',{title:'Missing info',danger:true});return;}
 
   const already=sessions.find(s=>!s.signedOut && s.idnum.toLowerCase()===idnum.toLowerCase());
   if(already){
@@ -2590,7 +2890,7 @@ async function completeSignIn(name,idnum,phone){
   const {data,error}=await sb.from('sessions').insert({
     owner_id:currentUserId,name,idnum,phone,start_time:nowIso,signed_out:false
   }).select().single();
-  if(error){ alert('Could not save sign-in: '+error.message); return; }
+  if(error){ showAlertModal('Could not save sign-in: '+error.message,{title:'Save failed',danger:true}); return; }
   sessions.unshift(dbRowToSession(data));
   saveToDirectory(idnum,name,phone);
   beep(660,0.1);
@@ -2625,10 +2925,62 @@ function closeDebtBlockModal(){
   document.getElementById('debt-block-modal').style.display='none';
   pendingDebtBlock=null;
 }
+
+// ── generic confirm/alert modal — replaces every native confirm()/alert() ──
+// showConfirmModal resolves true/false based on which button was pressed.
+// showAlertModal is the same modal with the Cancel button hidden — resolves
+// once OK is pressed, so callers can `await` it if they need to wait, or
+// just fire it without awaiting for a pure notice.
+let genericModalResolve=null;
+function showConfirmModal({title='Are you sure?',message='',confirmText='OK',cancelText='Cancel',danger=false,icon}={}){
+  return new Promise(resolve=>{
+    genericModalResolve=resolve;
+    const titleEl=document.getElementById('gm-title');
+    titleEl.textContent=title;
+    titleEl.style.color=danger?'var(--red)':'var(--ink)';
+    document.getElementById('gm-message').innerHTML=message;
+    const circle=document.getElementById('gm-icon-circle');
+    circle.style.background=danger?'var(--red-bg)':'var(--green-bg)';
+    const iconEl=document.getElementById('gm-icon');
+    iconEl.className='ti '+(icon||(danger?'ti-alert-triangle':'ti-help-circle'));
+    iconEl.style.color=danger?'var(--red)':'var(--green)';
+    const cancelBtn=document.getElementById('gm-cancel-btn');
+    cancelBtn.style.display='block';
+    cancelBtn.textContent=cancelText;
+    const confirmBtn=document.getElementById('gm-confirm-btn');
+    confirmBtn.textContent=confirmText;
+    confirmBtn.style.background=danger?'var(--red)':'var(--green)';
+    document.getElementById('generic-modal').style.display='flex';
+  });
+}
+function showAlertModal(message,{title='Notice',danger=false,icon}={}){
+  return new Promise(resolve=>{
+    genericModalResolve=resolve;
+    const titleEl=document.getElementById('gm-title');
+    titleEl.textContent=title;
+    titleEl.style.color=danger?'var(--red)':'var(--ink)';
+    document.getElementById('gm-message').innerHTML=message;
+    const circle=document.getElementById('gm-icon-circle');
+    circle.style.background=danger?'var(--red-bg)':'var(--green-bg)';
+    const iconEl=document.getElementById('gm-icon');
+    iconEl.className='ti '+(icon||(danger?'ti-alert-triangle':'ti-info-circle'));
+    iconEl.style.color=danger?'var(--red)':'var(--green)';
+    document.getElementById('gm-cancel-btn').style.display='none';
+    const confirmBtn=document.getElementById('gm-confirm-btn');
+    confirmBtn.textContent='OK';
+    confirmBtn.style.background=danger?'var(--red)':'var(--green)';
+    document.getElementById('generic-modal').style.display='flex';
+  });
+}
+function closeGenericModal(result){
+  document.getElementById('generic-modal').style.display='none';
+  if(genericModalResolve){ const r=genericModalResolve; genericModalResolve=null; r(result); }
+}
+
 async function ownerOverrideSignIn(){
   if(!pendingDebtBlock)return;
   const {name,idnum,phone,debtAmt}=pendingDebtBlock;
-  if(!confirm('This lets '+name+' sign in while still owing '+fmtPrice(debtAmt)+'.\n\nOnly the owner should approve this. Continue?')) return;
+  if(!await showConfirmModal({title:'Allow sign-in with debt?',message:'This lets <strong>'+name+'</strong> sign in while still owing <strong style="color:var(--red);">'+fmtPrice(debtAmt)+'</strong>.<br><br>Only the owner should approve this.',confirmText:'Allow sign in',danger:true,icon:'ti-shield-check'})) return;
   closeDebtBlockModal();
   await completeSignIn(name,idnum,phone);
 }
@@ -2758,7 +3110,7 @@ function quickSignOut(sessionId){
 async function reactivateSession(sessionId){
   const s = sessions.find(x=>x.id===sessionId);
   if(!s||!s.signedOut) return;
-  if(!confirm('Put '+s.name+' back to active? This undoes the sign-out.')) return;
+  if(!await showConfirmModal({title:'Reactivate this session?',message:'Put <strong>'+s.name+'</strong> back to active? This undoes the sign-out.',confirmText:'Reactivate',icon:'ti-rotate'})) return;
   // undo whatever payment/debt was recorded during that sign-out
   if(s.debtAfter!==undefined){
     await setDebtFor(s.idnum,s.debtBefore||0);
@@ -2785,7 +3137,7 @@ async function reactivateSession(sessionId){
 async function deleteSessionRow(sessionId){
   const s = sessions.find(x=>x.id===sessionId);
   if(!s) return;
-  if(!confirm('Delete this record for '+s.name+'? This can\'t be undone.')) return;
+  if(!await showConfirmModal({title:'Delete this record?',message:'Delete this record for <strong>'+s.name+'</strong>? This can\u2019t be undone.',confirmText:'Delete',danger:true,icon:'ti-trash'})) return;
   sessions = sessions.filter(x=>x.id!==sessionId);
   updateStats();
   renderActiveCards();
@@ -3342,7 +3694,7 @@ function renderSessions(){
   if(q&&q.value.trim()) filterTable('sessions-tb',q.value);
 }
 async function clearAll(){
-  if(!confirm('Clear all sessions?'))return;
+  if(!await showConfirmModal({title:'Clear all sessions?',message:'This deletes every session record. This can\u2019t be undone.',confirmText:'Clear all',danger:true,icon:'ti-trash'}))return;
   sessions=[];updateStats();renderSessions();renderRecent();
   await sb.from('sessions').delete().eq('owner_id',currentUserId);
 }
@@ -3374,6 +3726,15 @@ setInterval(()=>{
 
 // ── auto-start on load ────────────────────────────────────────────────────────
 // ── AUTH ─────────────────────────────────────────────────────────────────────
+// bridges the landing page to the existing auth screen — hides the marketing
+// page, reveals sign-in, and starts the (until now dormant) bike animation
+// only once there's actually something for it to sit behind.
+function showAuthFromLanding(mode){
+  document.getElementById('home-landing').style.display='none';
+  document.getElementById('auth-wrap').style.display='grid';
+  if(window.startBikeCanvas) window.startBikeCanvas();
+  if(mode==='signup') showSignup(); else showLogin();
+}
 function showLogin(){document.getElementById('auth-login').style.display='block';document.getElementById('auth-signup').style.display='none';clearAuthErr();}
 function showSignup(){document.getElementById('auth-signup').style.display='block';document.getElementById('auth-login').style.display='none';clearAuthErr();}
 function clearAuthErr(){['login-err','signup-err'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='none';el.textContent='';}})}
@@ -3472,6 +3833,7 @@ async function doLogout(){
 window.addEventListener('load',async ()=>{
   const {data:{session}}=await sb.auth.getSession();
   if(session){
+    document.getElementById('home-landing').style.display='none';
     currentUserId=session.user.id;
     const {data:profile}=await sb.from('profiles').select('name').eq('id',currentUserId).maybeSingle();
     await launchDashboard(profile?.name || session.user.email);
@@ -3521,7 +3883,10 @@ window.addEventListener('load',async ()=>{
 // It also never runs at all on mobile — CSS already hides .auth-left (which
 // holds the canvas) under 768px, so on phones/tablets this is pure wasted
 // CPU/GPU with nothing on screen to show for it. Desktop/laptop view only.
-let bikeAnimStopped=false;
+// Starts OFF by default now — the landing page (#home-landing) shows first,
+// not this screen, so there's nothing to animate yet. showAuthFromLanding()
+// calls window.startBikeCanvas() the moment the login screen actually appears.
+let bikeAnimStopped=true;
 window.stopBikeCanvas=function(){ bikeAnimStopped=true; };
 window.startBikeCanvas=function(){
   if(window.matchMedia('(max-width:768px)').matches) return; // stays off on mobile
@@ -3777,7 +4142,7 @@ window.startBikeCanvas=function(){
     if(!bikeAnimStopped) requestAnimationFrame(frame);
   }
   window._bikeFrameFn=frame;
-  frame();
+  if(!bikeAnimStopped) frame();
 })();
 (function(){
   const lines=['Smart session','tracking for your','lounge business'];
@@ -3821,6 +4186,42 @@ window.startBikeCanvas=function(){
   }
   setTimeout(tick,400);
 })();
+
+// ── LANDING PAGE — live-ticking demo card ────────────────────────────────────
+// Purely decorative, and self-stopping the moment #home-landing is hidden
+// (sign-in clicked, or an already-logged-in user skips straight to their
+// dashboard) — same lesson as the bike canvas earlier: nothing should tick
+// in the background once its own screen is gone.
+(function(){
+  const yearEl=document.getElementById('lp-year');
+  if(yearEl) yearEl.textContent=new Date().getFullYear();
+
+  const timerEl=document.getElementById('lp-demo-timer');
+  const costEl=document.getElementById('lp-demo-cost');
+  const totalEl=document.getElementById('lp-demo-total');
+  if(!timerEl||!costEl||!totalEl) return;
+
+  const RATE=150; // KSh/hour — purely for the demo's visual pace, not real pricing
+  let elapsedSec=42, todayTotal=1850;
+
+  function tick(){
+    const landing=document.getElementById('home-landing');
+    if(!landing || landing.style.display==='none') return; // stop for good once hidden
+
+    elapsedSec++;
+    const m=String(Math.floor(elapsedSec/60)).padStart(2,'0');
+    const s=String(elapsedSec%60).padStart(2,'0');
+    timerEl.textContent=m+':'+s;
+    const cost=Math.round((elapsedSec/3600)*RATE);
+    costEl.textContent='KSh '+cost;
+    if(elapsedSec%7===0) todayTotal+=Math.round(20+Math.random()*40);
+    totalEl.textContent='KSh '+todayTotal.toLocaleString();
+
+    setTimeout(tick,1000);
+  }
+  setTimeout(tick,1000);
+})();
 </script>
+
 </body>
 </html>
