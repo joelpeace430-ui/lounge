@@ -41,7 +41,7 @@ async function readOnce(b64) {
   });
   if (!res.ok) {
     const t = await res.text();
-    console.error('Vendor API error:', res.status, t); // full detail stays server-side only
+    console.error(`Vendor API error (status ${res.status}, image ~${Math.ceil(b64.length*0.75/1024)}KB):`, t);
     throw new Error('read failed');
   }
   const data = await res.json();
