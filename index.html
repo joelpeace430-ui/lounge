@@ -1,27 +1,4 @@
-<!--
-  ═══════════════════════════════════════════════════════════════════════════
-  LOUNGE MANAGER — main app (frontend)
-  ═══════════════════════════════════════════════════════════════════════════
-  This file: everything the customer/staff/owner SEE and interact with —
-  the UI, the camera scanner, sign in/out, sessions, calendar, settings.
 
-  This app has ONE companion file it depends on:
-    → api/mpesa.js  — handles M-Pesa payments (STK push + Safaricom's callback)
-
-  That file MUST stay separate. Two reasons, not a style choice:
-    1. Vercel only turns files inside an "api/" folder into live server
-       addresses. If mpesa.js weren't its own file there, it would just be
-       inert text — Safaricom would have nowhere to send payment confirmations.
-    2. That file holds SECRET keys (M-Pesa + Supabase credentials). This HTML
-       file is sent in full to every visitor's browser (viewable via "View
-       Source") — secrets can never live here.
-
-  Deploy both files together, keeping this exact folder structure:
-    /index.html   (this file)
-    /api/mpesa.js
-    /package.json
-  ═══════════════════════════════════════════════════════════════════════════
--->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -688,14 +665,7 @@ body.dark{
 .pm-waiting-spinner .sdot{width:14px;height:14px;background:var(--green);}
 .pm-waiting-text{text-align:center;font-size:13px;color:var(--ink2);margin-bottom:14px;line-height:1.6;}
 
-/* ═══════════════════════════════════════════════════════════════════════
-   HOME / LANDING PAGE — shown first, before sign-in. Dark theme matches
-   the auth screen exactly (#0d0d0d) so it reads as the same product, not
-   a bolted-on marketing page. Green = money/M-Pesa (already the app's own
-   meaning for it throughout); blue is new here, used only for "session/
-   live" moments — the two colors map to the app's two real concerns:
-   getting paid, and tracking time.
-   ═══════════════════════════════════════════════════════════════════════ */
+
 .lp{--lp-blue:#3aa0ff;--lp-blue-bg:rgba(58,160,255,.12);--lp-blue-border:rgba(58,160,255,.28);
   background:#0d0d0d;color:#f5f5f7;min-height:100vh;font-family:var(--sans);}
 .lp *{box-sizing:border-box;}
@@ -1914,9 +1884,7 @@ async function setDebtFor(idnum,amount){
     if(isNewDebt){
       const since=new Date().toISOString();
       debtSince[key]=Date.parse(since);
-      payload.since=since; // only included on a fresh debt — an upsert that omits
-                            // this column leaves the existing 'since' untouched,
-                            // so an ongoing debt's original date never resets
+      payload.since=since; 
     }
     await sb.from('debts').upsert(payload);
   }
@@ -2020,8 +1988,8 @@ async function saveMpesaSettings(){
   };
   if(env==='production'){
     body.shortcode=document.getElementById('mpesa-shortcode-input').value.trim();
-    // only send credential fields if the owner actually typed something new —
-    // if they're still masked/collapsed, leave whatever's already saved alone
+ 
+ 
     const fieldsVisible=document.getElementById('mpesa-cred-fields').style.display!=='none';
     if(fieldsVisible){
       body.consumerKey=document.getElementById('mpesa-consumer-key-input').value.trim();
@@ -2085,9 +2053,6 @@ async function finalizeDay(dateKey){
   return stats;
 }
 
-// Called once a minute — detects when the calendar date has rolled over and, depending on
-// the owner's chosen mode, either clears that day's sessions or just leaves them in place.
-// Either way the day's total is locked into history first, so nothing is ever lost.
 async function checkDailyRollover(){
   const last=localStorage.getItem('lm_last_check_date');
   const today=todayKey();
@@ -2418,9 +2383,6 @@ function captureProcessedFrame(v){
   }
   ctx.putImageData(new ImageData(d,w,h),0,0);
 
-  // encode at a quality that keeps the base64 payload safely under Groq's
-  // 4MB limit — step quality down further if a particularly detailed photo
-  // still comes out too big, rather than ever sending an oversized request.
   let quality=0.85, dataUrl=c.toDataURL('image/jpeg',quality);
   const approxBytes=()=>Math.ceil(dataUrl.length*0.75); // base64 → raw byte estimate
   while(approxBytes()>3500000 && quality>0.5){ // stay well clear of the 4MB ceiling
@@ -3053,13 +3015,7 @@ function switchView(v){
   // it'd just be clutter sitting above Sessions/Calendar/Settings
   const sbEl=document.querySelector('.sb');
   if(sbEl) sbEl.classList.toggle('sb-hide-mobile', v!=='signin');
-  // Stop the camera stream whenever we're off the Sign in tab, and restart it
-  // when we come back — not just hide it. A running getUserMedia stream keeps
-  // decoding video in the background even under display:none/inactive tabs,
-  // which is a heavy, continuous drain regardless of screen size. This used to
-  // only apply on mobile viewports, which meant on desktop/laptop the camera
-  // just kept decoding forever once started, no matter which tab you were on —
-  // that was still causing app-wide lag while typing on every other page.
+
   if(v!=='signin'){
     pauseMobileCamera();
   }else if(cameraEnabled && !mainStream){
