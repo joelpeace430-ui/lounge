@@ -2377,10 +2377,21 @@ function autoLevels(px,w,h){
 
 // ── manual capture (button-triggered — no HSV color matching) ─────────────────
 function captureProcessedFrame(v){
-  // capture at 2x upscale for more pixels
+  // capture at 2x upscale for more pixels, then cap the final size so we
+  // reliably stay under Groq's 4MB base64-encoded image limit. A detailed,
+  // well-lit close-up photo compresses to a LARGER file than a blurry one —
+  // uncapped, exactly the best photos were the ones getting rejected outright
+  // by the vendor's request-size limit, which looked like "even good photos
+  // fail" when it was actually "only good photos are big enough to fail."
   const SCALE=2;
+  const MAX_DIM=1600; // longest edge, px — plenty for OCR, comfortably small enough to stay under the 4MB limit
+  let cw=v.videoWidth*SCALE, ch=v.videoHeight*SCALE;
+  if(Math.max(cw,ch)>MAX_DIM){
+    const scale=MAX_DIM/Math.max(cw,ch);
+    cw=Math.round(cw*scale); ch=Math.round(ch*scale);
+  }
   const c=document.createElement('canvas');
-  c.width=v.videoWidth*SCALE;c.height=v.videoHeight*SCALE;
+  c.width=cw;c.height=ch;
   const ctx=c.getContext('2d');
   ctx.imageSmoothingEnabled=true;
   ctx.imageSmoothingQuality='high';
@@ -2406,7 +2417,17 @@ function captureProcessedFrame(v){
     }
   }
   ctx.putImageData(new ImageData(d,w,h),0,0);
-  return c.toDataURL('image/jpeg',0.97);
+
+  // encode at a quality that keeps the base64 payload safely under Groq's
+  // 4MB limit — step quality down further if a particularly detailed photo
+  // still comes out too big, rather than ever sending an oversized request.
+  let quality=0.85, dataUrl=c.toDataURL('image/jpeg',quality);
+  const approxBytes=()=>Math.ceil(dataUrl.length*0.75); // base64 → raw byte estimate
+  while(approxBytes()>3500000 && quality>0.5){ // stay well clear of the 4MB ceiling
+    quality-=0.1;
+    dataUrl=c.toDataURL('image/jpeg',quality);
+  }
+  return dataUrl;
 }
 
 // waits for the next actually-painted video frame — not a fixed delay, just
@@ -2470,6 +2491,16 @@ function readCardNow(){
   processCapture(pendingFrames);
 }
 
+// re-enables the buttons on the SAME photo instead of forcing a full retake —
+// most read failures are transient (network blip, server hiccup), and the
+// photo itself is usually still perfectly fine.
+function reenableReadButtons(){
+  const rb=document.getElementById('ai-read-btn');
+  if(rb)rb.disabled=false;
+  const tb=document.getElementById('retake-btn');
+  if(tb)tb.disabled=false;
+}
+
 async function processCapture(frames){
   const url=frames[0];
 
@@ -2478,7 +2509,7 @@ async function processCapture(frames){
     const {data:{session}}=await sb.auth.getSession();
     if(!session){
       setPill('scanning','Please log in again');
-      setTimeout(()=>armCapture(),2000);
+      reenableReadButtons();
       return;
     }
     const res=await fetch('/api/scan-id',{
@@ -2489,7 +2520,8 @@ async function processCapture(frames){
     const result=await res.json();
     if(!res.ok){
       setPill('scanning',result.error||'Read error — try again');
-      setTimeout(()=>armCapture(),2000);
+      setBanner('scanning','⚠ '+(result.error||'Read error')+' — tap Read card to try again');
+      reenableReadButtons();
       return;
     }
 
@@ -2497,21 +2529,19 @@ async function processCapture(frames){
     setPill('reading',`Got: ${name} / ${idnum}`);
 
     if(name==='UNKNOWN' && idnum==='UNKNOWN'){
-      // nothing could be read — reject this scan
+      // nothing could be read — let them try the SAME photo again, or retake if it's genuinely bad
       rejectSound();
-      setPill('scanning','Could not read card — try again');
-      setBanner('scanning','⚠ No text detected on card — reposition and hold steady');
-      setTimeout(()=>{
-        armCapture();
-        setBanner('scanning','Waiting for card scan...');
-      },2500);
+      setPill('scanning','Could not read card');
+      setBanner('scanning','⚠ No text detected — hold steady and tap Read card again, or Retake if the photo\'s blurry');
+      reenableReadButtons();
       return;
     }
 
     routeCard(url,name,idnum);
   }catch(e){
     setPill('scanning','Read error — try again');
-    setTimeout(()=>armCapture(),2000);
+    setBanner('scanning','⚠ Could not reach the server — check your connection and tap Read card again');
+    reenableReadButtons();
   }
 }
 
@@ -3564,11 +3594,11 @@ function sessionRowHtml(s,num,mode){
       :`<span class="live-cost" data-start="${s.startTime}" style="font-weight:600;color:var(--ink2);font-family:var(--mono);font-size:12px;">${fmtPrice(price)}</span>`;
   let action='';
   if(mode==='debt'){
-    action=`<button onclick="settleDebtor('${s.idnum}')" style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:var(--sans);">Settle up</button>`;
+    action=`<button onclick="settleDebtor('${s.idnum}')" style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:var(--sans);width:82px;text-align:center;">Settle up</button>`;
   }else if(!s.signedOut){
-    action=`<button onclick="quickSignOut('${s.id}')" style="background:var(--red-bg);border:1px solid var(--red-border);color:var(--red);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:var(--sans);">Sign out</button>`;
+    action=`<button onclick="quickSignOut('${s.id}')" style="background:var(--red-bg);border:1px solid var(--red-border);color:var(--red);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:var(--sans);width:82px;text-align:center;">Sign out</button>`;
   }else{
-    action=`<button onclick="reactivateSession('${s.id}')" title="Signed out by mistake? Put them back to active." style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:var(--sans);">Reactivate</button>`;
+    action=`<button onclick="reactivateSession('${s.id}')" title="Signed out by mistake? Put them back to active." style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:var(--sans);width:82px;text-align:center;">Reactivate</button>`;
   }
   // delete this record entirely — Sessions/Recent tabs only, not the Debt tab
   // (deleting there would just leave the debt behind with no context, so the
@@ -3579,12 +3609,12 @@ function sessionRowHtml(s,num,mode){
   let paidcell='<span style="color:var(--ink3);">—</span>';
   if(s.signedOut && s.amountPaid!=null){
     const methodTag=s.paymentMethod==='mpesa'
-      ?`<span style="font-size:9px;font-weight:700;color:#16a34a;background:#dcfce7;padding:1px 5px;border-radius:5px;margin-left:5px;">M-PESA</span>`
+      ?`<div style="font-size:9px;font-weight:700;color:#16a34a;background:#dcfce7;padding:1px 5px;border-radius:5px;display:inline-block;margin-top:2px;">M-PESA</div>`
       :s.paymentMethod==='cash'
-      ?`<span style="font-size:9px;font-weight:700;color:var(--ink3);background:var(--surface3);padding:1px 5px;border-radius:5px;margin-left:5px;">CASH</span>`
+      ?`<div style="font-size:9px;font-weight:700;color:var(--ink3);background:var(--surface3);padding:1px 5px;border-radius:5px;display:inline-block;margin-top:2px;">CASH</div>`
       :'';
     const receiptTitle=s.mpesaReceipt?` title="Receipt: ${s.mpesaReceipt}"`:'';
-    paidcell=`<span${receiptTitle} style="font-weight:600;color:var(--ink);font-family:var(--mono);font-size:12px;">${fmtPrice(s.amountPaid)}</span>${methodTag}`;
+    paidcell=`<div${receiptTitle} style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.4;"><span style="font-weight:600;color:var(--ink);font-family:var(--mono);font-size:12px;">${fmtPrice(s.amountPaid)}</span>${methodTag}</div>`;
   }
   const sinceCell=mode==='debt'
     ?`<td data-label="Since">${debtSince[s.idnum.toLowerCase().trim()]?fmtDate(debtSince[s.idnum.toLowerCase().trim()]):'—'}</td>`
