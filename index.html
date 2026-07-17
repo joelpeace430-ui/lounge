@@ -2214,7 +2214,7 @@ function renderDailyHistory(){
 
 let mainStream=null;
 let captured=false;
-let captureQueue=[]; // array of data-URL photos, one per person, built up before "Read all"
+let captureQueue=[]; // array of frame-groups (each a [frame1,frame2,frame3] burst), one group per person
 let sessions=[],curView='signin';
 
 function drawStrip(canvas,color='rgba(255,255,255,0.4)'){canvas.width=canvas.offsetWidth;canvas.height=canvas.offsetHeight;const ctx=canvas.getContext('2d'),cy=canvas.height/2;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(canvas.width,cy);ctx.stroke();ctx.setLineDash([]);}
@@ -2461,7 +2461,15 @@ async function takePicture(){
   document.getElementById('main-conf').style.width='100%';
   document.getElementById('main-conf').style.background='#22c55e';
 
-  captureQueue.push(captureProcessedFrame(v));
+  // burst of 3 quick frames per person — still just one tap, but restores the
+  // majority-vote accuracy a single frame doesn't have. Capture itself is
+  // fast (no heavy per-pixel processing anymore), so this stays quick.
+  const frames=[];
+  for(let i=0;i<3;i++){
+    frames.push(captureProcessedFrame(v));
+    if(i<2) await nextPaint();
+  }
+  captureQueue.push(frames);
 
   document.getElementById('main-conf').style.width='0%';
   captured=false;
@@ -2476,9 +2484,9 @@ function renderCaptureQueue(){
     strip.innerHTML='';
   }else{
     strip.style.display='flex';
-    strip.innerHTML=captureQueue.map((photo,i)=>`
+    strip.innerHTML=captureQueue.map((frames,i)=>`
       <div style="position:relative;width:52px;height:36px;flex-shrink:0;">
-        <img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;border:1px solid var(--line2);"/>
+        <img src="${frames[0]}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;border:1px solid var(--line2);"/>
         <button onclick="removeFromQueue(${i})" title="Remove this photo" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--red);border:none;color:#fff;font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">×</button>
       </div>`).join('');
   }
@@ -2570,7 +2578,7 @@ async function readCardNow(){
       const res=await fetch('/api/scan-id',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({frames:[queue[i].split(',')[1]],accessToken:session.access_token})
+        body:JSON.stringify({frames:queue[i].map(f=>f.split(',')[1]),accessToken:session.access_token})
       });
       const result=await res.json();
       if(!res.ok || (result.name==='UNKNOWN' && result.idnum==='UNKNOWN')){
