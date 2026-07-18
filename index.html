@@ -2766,6 +2766,7 @@ function showPaymentStep(step){
 function closePaymentModal(){
   document.getElementById('payment-modal').style.display='none';
   pendingPayment=null;
+  if(mpesaPollTimer){clearInterval(mpesaPollTimer);mpesaPollTimer=null;}
 }
 
 const LARGE_CASH_THRESHOLD=10000;
@@ -3247,6 +3248,25 @@ function switchView(v){
     pauseMobileCamera();
   }else if(cameraEnabled && !mainStream){
     startMainScanner();
+  }
+  // stop any bulk M-Pesa status-polling timers if the owner navigates away
+  // while a batch send is still tracking — same reason as the camera stream
+  // above: a background setInterval doesn't know to stop itself just because
+  // its own screen isn't visible anymore, and left running it's a steady
+  // stream of network calls competing with everything else, felt worst as
+  // scroll jank. The actual payments aren't affected — Safaricom's callback
+  // updates the database regardless, and the realtime subscription already
+  // refreshes the Sessions table when that happens; this timer was only ever
+  // for this one modal's own live status list.
+  if(v!=='sessions' && typeof bulkMpesaPollTimers!=='undefined' && bulkMpesaPollTimers.length){
+    bulkMpesaPollTimers.forEach(t=>clearInterval(t));
+    bulkMpesaPollTimers=[];
+    const bm=document.getElementById('bulk-mpesa-modal');
+    if(bm) bm.style.display='none';
+  }
+  if(typeof mpesaPollTimer!=='undefined' && mpesaPollTimer){
+    const pm=document.getElementById('payment-modal');
+    if(!pm || pm.style.display!=='flex'){ clearInterval(mpesaPollTimer); mpesaPollTimer=null; }
   }
   const titles={signin:'Sign in',sessions:'Sessions',debt:'Debt',calendar:'Calendar',settings:'Settings'};
   document.getElementById('view-title').textContent=titles[v];
