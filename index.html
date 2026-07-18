@@ -2571,6 +2571,7 @@ async function readCardNow(){
   const queue=[...captureQueue];
   const total=queue.length;
   let registered=0,signedOut=0,failed=0,skipped=0;
+  let firstFailReason=null; // surfaced in the summary so a real server error is never silently indistinguishable from "AI genuinely couldn't read it"
 
   for(let i=0;i<total;i++){
     setPill('reading',`Reading ID ${i+1} of ${total}...`);
@@ -2581,7 +2582,15 @@ async function readCardNow(){
         body:JSON.stringify({frames:queue[i].map(f=>f.split(',')[1]),accessToken:session.access_token})
       });
       const result=await res.json();
-      if(!res.ok || (result.name==='UNKNOWN' && result.idnum==='UNKNOWN')){
+      if(!res.ok){
+        console.error('scan-id request',i+1,'failed:',res.status,result.error);
+        if(!firstFailReason) firstFailReason=result.error||('server error, HTTP '+res.status);
+        failed++;
+        continue;
+      }
+      if(result.name==='UNKNOWN' && result.idnum==='UNKNOWN'){
+        console.warn('scan-id request',i+1,'returned UNKNOWN for both fields — the AI could not read this card');
+        if(!firstFailReason) firstFailReason='the AI could not find readable text on the card';
         failed++;
         continue;
       }
@@ -2590,6 +2599,8 @@ async function readCardNow(){
       else if(outcome.status==='signed_out')signedOut++;
       else skipped++;
     }catch(e){
+      console.error('scan-id request',i+1,'threw:',e);
+      if(!firstFailReason) firstFailReason=e.message;
       failed++;
     }
   }
@@ -2604,7 +2615,9 @@ async function readCardNow(){
   if(signedOut)parts.push(signedOut+' signed out');
   if(failed)parts.push(failed+' couldn\u2019t be read');
   if(skipped)parts.push(skipped+' skipped');
-  showAlertModal(parts.join(', ')+'.',{title:'Batch complete',icon:'ti-check'});
+  let summary=parts.join(', ')+'.';
+  if(failed && firstFailReason) summary+='<br><br><span style="color:var(--ink3);font-size:12px;">Reason: '+firstFailReason+'</span>';
+  showAlertModal(summary,{title:'Batch complete',icon:'ti-check',danger:failed>0&&!registered&&!signedOut});
 }
 
 // ── smart routing: sign in or sign out ───────────────────────────────────────
