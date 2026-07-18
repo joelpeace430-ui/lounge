@@ -1,15 +1,5 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "index.html", "use": "@vercel/static" },
-    { "src": "api/mpesa.js", "use": "@vercel/node" },
-    { "src": "api/scan-id.js", "use": "@vercel/node" },
-    { "src": "api/mpesa-settings.js", "use": "@vercel/node" }
-  ],
-  "routes": [
-    { "src": "/api/mpesa", "dest": "/api/mpesa.js" },
-    { "src": "/api/scan-id", "dest": "/api/scan-id.js" },
-    { "src": "/api/mpesa-settings", "dest": "/api/mpesa-settings.js" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
