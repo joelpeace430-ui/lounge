@@ -1085,50 +1085,18 @@ body.dark{
         <video id="main-vid" autoplay playsinline muted></video>
         <canvas id="main-ov"></canvas>
       </div>
-      <!-- captured ID thumbnails — one per person. Tap a thumbnail's × to remove
-           a mis-capture before reading. Works the same whether there's 1 or many. -->
-      <div id="capture-queue-strip" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+      <img id="capture-preview" style="display:none;width:100%;border-radius:8px;margin-bottom:6px;border:1px solid var(--line2);" alt="Captured card"/>
       <div class="strip-bar"><div class="strip-fill" id="main-conf"></div></div>
       <div class="spill scanning" id="main-pill"><span class="sdot pulse"></span> Starting...</div>
       <button class="sb-btn sb-grn" id="capture-btn" onclick="takePicture()" disabled style="margin-top:8px;"><i class="ti ti-camera" style="font-size:13px;margin-right:5px;" aria-hidden="true"></i>Take picture</button>
-      <button class="sb-btn sb-grn" id="ai-read-btn" onclick="readCardNow()" style="display:none;margin-top:8px;"><i class="ti ti-scan" style="font-size:13px;margin-right:5px;" aria-hidden="true"></i>Read all IDs (<span id="queue-count">0</span>)</button>
-      <div class="scan-hint" id="scan-hint-text">Line up a card, then tap Take picture — capture as many IDs as you like before reading</div>
+      <button class="sb-btn sb-grn" id="ai-read-btn" onclick="readCardNow()" style="display:none;margin-top:8px;"><i class="ti ti-scan" style="font-size:13px;margin-right:5px;" aria-hidden="true"></i>Read card</button>
+      <button class="sb-btn sb-dim" id="retake-btn" onclick="retakePicture()" style="display:none;"><i class="ti ti-refresh" style="font-size:13px;margin-right:5px;" aria-hidden="true"></i>Retake</button>
+      <div class="scan-hint" id="scan-hint-text">Line up the card, then tap Take picture</div>
     </div>
   </nav>
-
-  <!-- phone-number prompt shown once per successfully-read ID during batch registration -->
-  <div class="payment-modal-overlay" id="phone-prompt-modal" style="display:none;">
-    <div class="payment-modal">
-      <div class="pm-head">
-        <div class="pm-head-title" id="pp-title">Phone number</div>
-        <button class="pm-close" onclick="resolvePhonePrompt(null)"><i class="ti ti-x"></i></button>
-      </div>
-      <div class="pm-summary" style="margin-bottom:14px;">
-        <p style="font-size:13px;color:var(--ink2);line-height:1.6;margin:0;">Registering <strong id="pp-name" style="color:var(--ink);"></strong> (<span id="pp-idnum"></span>). Enter their phone number, or skip.</p>
-      </div>
-      <div class="fg" style="margin-bottom:14px;">
-        <input type="tel" id="pp-phone-input" placeholder="07XX XXX XXX" style="width:100%;padding:10px 12px;background:var(--surface2);border:1px solid var(--line2);border-radius:8px;color:var(--ink);font-size:14px;font-family:var(--sans);outline:none;" autofocus/>
-      </div>
-      <button class="pm-back-btn" onclick="resolvePhonePrompt('')" style="background:var(--surface2);border:1px solid var(--line2);margin-bottom:8px;">Skip — no phone number</button>
-      <button class="pm-confirm-btn" onclick="resolvePhonePrompt(document.getElementById('pp-phone-input').value.trim())"><i class="ti ti-check"></i> Register</button>
-      <button onclick="skipAllRemainingPhones()" style="width:100%;background:none;border:none;color:var(--ink3);font-size:12px;padding:10px;cursor:pointer;font-family:var(--sans);text-decoration:underline;">Skip phone for everyone left in this batch</button>
-    </div>
-  </div>
-
-  <!-- bulk M-Pesa tracking — one row per selected person, updates live as each STK push resolves -->
-  <div class="payment-modal-overlay" id="bulk-mpesa-modal" style="display:none;">
-    <div class="payment-modal">
-      <div class="pm-head">
-        <div class="pm-head-title">Sending M-Pesa prompts</div>
-        <button class="pm-close" onclick="closeBulkMpesaModal()"><i class="ti ti-x"></i></button>
-      </div>
-      <p style="font-size:12px;color:var(--ink3);margin:0 0 14px;line-height:1.6;">Each person gets sent their own prompt — they don't all arrive at once, so give it a moment to work through the list.</p>
-      <div id="bulk-mpesa-list" style="display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;margin-bottom:14px;"></div>
-      <button class="pm-confirm-btn" id="bulk-mpesa-done-btn" onclick="closeBulkMpesaModal()" style="display:none;">Done</button>
-    </div>
-  </div>
   </div>
 </aside>
+
 
 <!-- MAIN -->
 <div class="main">
@@ -1314,20 +1282,11 @@ body.dark{
             <button class="btn-sm" onclick="clearAll()"><i class="ti ti-trash" style="font-size:13px;margin-right:4px;"></i>Clear all</button>
           </div>
         </div>
-        <!-- bulk M-Pesa bar — appears once at least one active session is checked -->
-        <div id="bulk-mpesa-bar" style="display:none;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;background:var(--green-bg);border-bottom:1px solid var(--green-border);">
-          <span style="font-size:13px;color:var(--green);font-weight:600;"><span id="bulk-count">0</span> selected</span>
-          <div style="display:flex;gap:8px;">
-            <button class="btn-cl" onclick="clearBulkSelection()">Cancel</button>
-            <button class="btn-si" onclick="startBulkMpesa()"><i class="ti ti-brand-android"></i> Send M-Pesa to all selected</button>
-          </div>
-        </div>
         <div class="table-scroll">
         <table>
           <thead>
             <tr>
-              <th style="width:30px;padding-left:12px;padding-right:0;"></th>
-              <th style="width:34px;padding-left:6px;padding-right:6px;">#</th>
+              <th style="width:34px;padding-left:12px;padding-right:6px;">#</th>
               <th style="width:190px;">Name</th>
               <th style="width:130px;">ID number</th>
               <th style="width:120px;">Phone</th>
@@ -1342,7 +1301,7 @@ body.dark{
             </tr>
           </thead>
           <tbody id="sessions-tb">
-            <tr class="empty-row"><td colspan="13">No sessions yet</td></tr>
+            <tr class="empty-row"><td colspan="12">No sessions yet</td></tr>
           </tbody>
         </table>
         </div>
@@ -2213,8 +2172,7 @@ function renderDailyHistory(){
 }
 
 let mainStream=null;
-let captured=false;
-let captureQueue=[]; // array of frame-groups (each a [frame1,frame2,frame3] burst), one group per person
+let captured=false,pendingFrames=null;
 let sessions=[],curView='signin';
 
 function drawStrip(canvas,color='rgba(255,255,255,0.4)'){canvas.width=canvas.offsetWidth;canvas.height=canvas.offsetHeight;const ctx=canvas.getContext('2d'),cy=canvas.height/2;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(canvas.width,cy);ctx.stroke();ctx.setLineDash([]);}
@@ -2357,21 +2315,18 @@ function initials(name){return name.split(' ').slice(0,2).map(w=>w[0]||'').join(
 function setPill(cls,msg){const el=document.getElementById('main-pill');el.className='spill '+cls;el.innerHTML=`<span class="sdot ${cls==='scanning'||cls==='reading'?'pulse':''}"></span> ${msg}`;}
 function armCapture(msg){
   captured=false;
+  pendingFrames=null;
   document.getElementById('main-conf').style.width='0%';
   document.getElementById('strip-live').style.display='block';
+  document.getElementById('capture-preview').style.display='none';
   const btn=document.getElementById('capture-btn');
   if(btn){btn.disabled=false;btn.style.display='flex';}
-  renderCaptureQueue();
-  document.getElementById('scan-hint-text').textContent=captureQueue.length
-    ?'Take another, or tap Read all to register everyone captured so far.'
-    :'Line up a card, then tap Take picture — capture as many IDs as you like before reading';
-  setPill('signin',msg||(captureQueue.length?captureQueue.length+' ID'+(captureQueue.length!==1?'s':'')+' ready':'Ready — tap Take picture'));
-}
-function updateReadAllButton(){
   const rb=document.getElementById('ai-read-btn');
-  const countEl=document.getElementById('queue-count');
-  if(countEl)countEl.textContent=captureQueue.length;
-  if(rb){rb.style.display=captureQueue.length?'flex':'none';rb.disabled=false;}
+  if(rb){rb.disabled=false;rb.style.display='none';}
+  const tb=document.getElementById('retake-btn');
+  if(tb){tb.disabled=false;tb.style.display='none';}
+  document.getElementById('scan-hint-text').textContent='Line up the card, then tap Take picture';
+  setPill('signin',msg||'Ready — tap Take picture');
 }
 function setBanner(cls,msg){
   const el=document.getElementById('mode-banner');
@@ -2460,164 +2415,102 @@ async function takePicture(){
   drawStrip(ov,'#22c55e');
   document.getElementById('main-conf').style.width='100%';
   document.getElementById('main-conf').style.background='#22c55e';
+  setPill('reading','Capturing...');
 
-  // burst of 3 quick frames per person — still just one tap, but restores the
-  // majority-vote accuracy a single frame doesn't have. Capture itself is
-  // fast (no heavy per-pixel processing anymore), so this stays quick.
+  // burst: 3 real frames back-to-back, as fast as the browser can paint them
   const frames=[];
   for(let i=0;i<3;i++){
     frames.push(captureProcessedFrame(v));
-    if(i<2) await nextPaint();
+    if(i<2)await nextPaint();
   }
-  captureQueue.push(frames);
+  pendingFrames=frames;
 
+  // show the photo for review instead of sending it off immediately
+  document.getElementById('strip-live').style.display='none';
+  const preview=document.getElementById('capture-preview');
+  preview.src=frames[0];
+  preview.style.display='block';
+  document.getElementById('capture-btn').style.display='none';
+  document.getElementById('ai-read-btn').style.display='flex';
+  document.getElementById('retake-btn').style.display='flex';
   document.getElementById('main-conf').style.width='0%';
-  captured=false;
-  armCapture(); // stays ready immediately for the next ID — no review/retake step
+  setPill('signin','Photo captured — review it');
+  document.getElementById('scan-hint-text').textContent='Good shot? Tap Read card. Blurry? Retake.';
 }
 
-function renderCaptureQueue(){
-  const strip=document.getElementById('capture-queue-strip');
-  if(!strip)return;
-  if(!captureQueue.length){
-    strip.style.display='none';
-    strip.innerHTML='';
-  }else{
-    strip.style.display='flex';
-    strip.innerHTML=captureQueue.map((frames,i)=>`
-      <div style="position:relative;width:52px;height:36px;flex-shrink:0;">
-        <img src="${frames[0]}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;border:1px solid var(--line2);"/>
-        <button onclick="removeFromQueue(${i})" title="Remove this photo" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--red);border:none;color:#fff;font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">×</button>
-      </div>`).join('');
-  }
-  updateReadAllButton();
-}
-function removeFromQueue(i){
-  captureQueue.splice(i,1);
-  renderCaptureQueue();
-  document.getElementById('scan-hint-text').textContent=captureQueue.length
-    ?'Capture another ID, or tap Read all IDs when you\u2019re done'
-    :'Line up a card, then tap Take picture — capture as many IDs as you like before reading';
-}
-
-// ── phone-number prompt — a real UI modal instead of the native prompt(),
-// shown once per successfully-read ID during batch registration. "Skip" and
-// the × both just proceed with no phone number, so a single batch run never
-// gets stuck waiting on a decision that isn't really a decision. ────────────
-let phonePromptResolve=null;
-let skipAllPhonesThisBatch=false; // set mid-batch via "Skip phone for everyone left" — reset at the start of each readCardNow() run
-function promptPhoneNumber(name,idnum){
-  if(skipAllPhonesThisBatch) return Promise.resolve('');
-  return new Promise(resolve=>{
-    phonePromptResolve=resolve;
-    document.getElementById('pp-name').textContent=name;
-    document.getElementById('pp-idnum').textContent=idnum;
-    const inp=document.getElementById('pp-phone-input');
-    inp.value='';
-    document.getElementById('phone-prompt-modal').style.display='flex';
-    setTimeout(()=>inp.focus(),50);
-  });
-}
-function resolvePhonePrompt(value){
-  document.getElementById('phone-prompt-modal').style.display='none';
-  if(phonePromptResolve){ const r=phonePromptResolve; phonePromptResolve=null; r(value||''); }
-}
-function skipAllRemainingPhones(){
-  skipAllPhonesThisBatch=true;
-  resolvePhonePrompt('');
-}
-
-// routes one successfully-read ID: an existing active session gets silently
-// signed out (no prompt needed, matches the single-scan behavior); a debt
-// block still shows the same owner-override modal as manual sign-in, so batch
-// mode never bypasses that safety check; otherwise, asks for a phone number
-// and registers them.
-async function processBatchPhoto(name,idnum){
-  const existing=sessions.find(s=>!s.signedOut && (s.idnum.toLowerCase()===idnum.toLowerCase() || (name!=='UNKNOWN' && s.name.toLowerCase()===name.toLowerCase())));
-  if(existing){
-    performSignOut(existing);
-    return{status:'signed_out',name:existing.name};
-  }
-  const debtAmt=getDebt(idnum);
-  if(debtAmt>0.01){
-    const known=customerDirectory[idnum.toLowerCase()];
-    const ownerAllows=await showConfirmModal({
-      title:'Sign-in blocked \u2014 owes debt',
-      message:'<strong>'+(known?known.name:idnum)+'</strong> owes <strong style="color:var(--red);">'+fmtPrice(debtAmt)+'</strong> from a previous visit and is blocked from signing in.<br><br>Skip them, or allow anyway?',
-      confirmText:'Allow anyway',cancelText:'Skip this one',danger:true,icon:'ti-shield-check'
-    });
-    if(!ownerAllows) return{status:'skipped',name};
-  }
-  const phone=await promptPhoneNumber(name,idnum);
-  await completeSignIn(name,idnum,phone);
-  return{status:'registered',name};
-}
-
-// "Read all IDs" — reads every queued photo one at a time (each is a
-// DIFFERENT person, so no majority-voting across them — that's only for the
-// 3 near-identical angles of a single card), routing each result as it comes
-// back rather than waiting for the whole batch, so progress is visible.
-async function readCardNow(){
-  if(!captureQueue.length)return;
-  skipAllPhonesThisBatch=false;
-  const btn=document.getElementById('ai-read-btn');
-  btn.disabled=true;
-  const {data:{session}}=await sb.auth.getSession();
-  if(!session){
-    showAlertModal('Please log in again.',{title:'Session expired',danger:true});
-    btn.disabled=false;
-    return;
-  }
-  const queue=[...captureQueue];
-  const total=queue.length;
-  let registered=0,signedOut=0,failed=0,skipped=0;
-  let firstFailReason=null; // surfaced in the summary so a real server error is never silently indistinguishable from "AI genuinely couldn't read it"
-
-  for(let i=0;i<total;i++){
-    setPill('reading',`Reading ID ${i+1} of ${total}...`);
-    try{
-      const res=await fetch('/api/scan-id',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({frames:queue[i].map(f=>f.split(',')[1]),accessToken:session.access_token})
-      });
-      const result=await res.json();
-      if(!res.ok){
-        console.error('scan-id request',i+1,'failed:',res.status,result.error);
-        if(!firstFailReason) firstFailReason=result.error||('server error, HTTP '+res.status);
-        failed++;
-        continue;
-      }
-      if(result.name==='UNKNOWN' && result.idnum==='UNKNOWN'){
-        console.warn('scan-id request',i+1,'returned UNKNOWN for both fields — the AI could not read this card');
-        if(!firstFailReason) firstFailReason='the AI could not find readable text on the card';
-        failed++;
-        continue;
-      }
-      const outcome=await processBatchPhoto(result.name,result.idnum);
-      if(outcome.status==='registered')registered++;
-      else if(outcome.status==='signed_out')signedOut++;
-      else skipped++;
-    }catch(e){
-      console.error('scan-id request',i+1,'threw:',e);
-      if(!firstFailReason) firstFailReason=e.message;
-      failed++;
-    }
-  }
-
-  captureQueue=[];
-  renderCaptureQueue();
-  updateStats();renderRecent();renderSessions();renderActiveCards();
+function retakePicture(){
+  pendingFrames=null;
+  document.getElementById('strip-live').style.display='block';
+  document.getElementById('capture-preview').style.display='none';
+  document.getElementById('capture-btn').style.display='flex';
+  document.getElementById('ai-read-btn').style.display='none';
+  document.getElementById('retake-btn').style.display='none';
+  document.getElementById('scan-hint-text').textContent='Line up the card, then tap Take picture';
   armCapture();
+}
 
-  const parts=[];
-  if(registered)parts.push(registered+' registered');
-  if(signedOut)parts.push(signedOut+' signed out');
-  if(failed)parts.push(failed+' couldn\u2019t be read');
-  if(skipped)parts.push(skipped+' skipped');
-  let summary=parts.join(', ')+'.';
-  if(failed && firstFailReason) summary+='<br><br><span style="color:var(--ink3);font-size:12px;">Reason: '+firstFailReason+'</span>';
-  showAlertModal(summary,{title:'Batch complete',icon:'ti-check',danger:failed>0&&!registered&&!signedOut});
+function readCardNow(){
+  if(!pendingFrames)return;
+  document.getElementById('ai-read-btn').disabled=true;
+  document.getElementById('retake-btn').disabled=true;
+  setPill('reading','Reading ID...');
+  processCapture(pendingFrames);
+}
+
+// re-enables the buttons on the SAME photo instead of forcing a full retake —
+// most read failures are transient (network blip, server hiccup), and the
+// photo itself is usually still perfectly fine.
+function reenableReadButtons(){
+  const rb=document.getElementById('ai-read-btn');
+  if(rb)rb.disabled=false;
+  const tb=document.getElementById('retake-btn');
+  if(tb)tb.disabled=false;
+}
+
+async function processCapture(frames){
+  const url=frames[0];
+
+  try{
+    setPill('reading','Reading ID...');
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session){
+      setPill('scanning','Please log in again');
+      reenableReadButtons();
+      return;
+    }
+    const res=await fetch('/api/scan-id',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({frames:frames.map(f=>f.split(',')[1]),accessToken:session.access_token})
+    });
+    const result=await res.json();
+    if(!res.ok){
+      console.error('scan-id request failed:',res.status,result.error);
+      setPill('scanning',result.error||'Read error — try again');
+      setBanner('scanning','⚠ '+(result.error||'Read error')+' — tap Read card to try again');
+      reenableReadButtons();
+      return;
+    }
+
+    const{name,idnum}=result;
+    setPill('reading',`Got: ${name} / ${idnum}`);
+
+    if(name==='UNKNOWN' && idnum==='UNKNOWN'){
+      // nothing could be read — let them try the SAME photo again, or retake if it's genuinely bad
+      rejectSound();
+      setPill('scanning','Could not read card');
+      setBanner('scanning','⚠ No text detected — hold steady and tap Read card again, or Retake if the photo\'s blurry');
+      reenableReadButtons();
+      return;
+    }
+
+    routeCard(url,name,idnum);
+  }catch(e){
+    console.error('processCapture error:',e);
+    setPill('scanning','Read error — try again');
+    setBanner('scanning','⚠ Could not reach the server — check your connection and tap Read card again');
+    reenableReadButtons();
+  }
 }
 
 // ── smart routing: sign in or sign out ───────────────────────────────────────
@@ -2875,121 +2768,6 @@ function cancelMpesaWait(){
   if(mpesaPollTimer)clearInterval(mpesaPollTimer);
   document.getElementById('pm-waiting-retry').style.display='none';
   showPaymentStep('choice');
-}
-
-// ── bulk M-Pesa — sends an individual STK push to each selected active
-// session, tracked together in one screen. Safaricom has no "push to many
-// phones at once" API, so this is N separate pushes sent with a short stagger
-// between them (avoids hammering Daraja), each tracked independently. ──────
-let bulkMpesaPollTimers=[];
-async function startBulkMpesa(){
-  if(!bulkSelectedIds.size)return;
-  const targets=[...bulkSelectedIds].map(id=>sessions.find(s=>s.id===id)).filter(s=>s&&!s.signedOut);
-  if(!targets.length)return;
-
-  // collect phone numbers FIRST, for anyone missing one — before sending
-  // anything, so the owner isn't interrupted partway through a send
-  skipAllPhonesThisBatch=false;
-  for(const s of targets){
-    if(!s.phone){
-      const phone=await promptPhoneNumber(s.name,s.idnum);
-      if(phone) s.phone=phone; // kept in memory for this send; also saved for real once payment succeeds via the normal sign-out flow
-    }
-  }
-  const withPhone=targets.filter(s=>s.phone);
-  const noPhone=targets.length-withPhone.length;
-  if(!withPhone.length){
-    showAlertModal('None of the selected people have a phone number to send to.',{title:'Nothing to send',danger:true});
-    return;
-  }
-
-  clearBulkSelection();
-  bulkMpesaPollTimers.forEach(t=>clearInterval(t));
-  bulkMpesaPollTimers=[];
-
-  const list=document.getElementById('bulk-mpesa-list');
-  list.innerHTML=withPhone.map(s=>`
-    <div id="bulk-row-${s.id}" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border-radius:9px;">
-      <div>
-        <div style="font-size:13px;font-weight:600;color:var(--ink);">${s.name}</div>
-        <div style="font-size:11px;color:var(--ink3);">${s.phone}</div>
-      </div>
-      <span id="bulk-status-${s.id}" style="font-size:11px;font-weight:700;color:var(--ink3);display:flex;align-items:center;gap:5px;"><span class="sdot pulse" style="width:6px;height:6px;"></span>Queued</span>
-    </div>`).join('');
-  document.getElementById('bulk-mpesa-done-btn').style.display='none';
-  const noPhoneNote=document.getElementById('bulk-mpesa-nophone-note');
-  if(noPhoneNote) noPhoneNote.remove();
-  if(noPhone>0){
-    list.insertAdjacentHTML('beforebegin',`<p id="bulk-mpesa-nophone-note" style="font-size:12px;color:var(--red);margin:0 0 10px;">${noPhone} skipped — no phone number entered.</p>`);
-  }
-  document.getElementById('bulk-mpesa-modal').style.display='flex';
-
-  const {data:{session}}=await sb.auth.getSession();
-  let doneCount=0;
-  const total=withPhone.length;
-
-  for(let i=0;i<withPhone.length;i++){
-    const s=withPhone[i];
-    const statusEl=document.getElementById('bulk-status-'+s.id);
-    if(statusEl) statusEl.innerHTML='<span class="sdot pulse" style="width:6px;height:6px;"></span>Sending...';
-    try{
-      const elapsedMs=Date.now()-s.startTime;
-      const cost=calcPrice(elapsedMs)||0;
-      const prevDebt=getDebt(s.idnum);
-      const totalDue=Math.round((cost+prevDebt)*100)/100;
-      const res=await fetch('/api/mpesa',{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({phone:s.phone,amount:totalDue,sessionId:s.id,idnum:s.idnum,accessToken:session.access_token})
-      });
-      const data=await res.json();
-      if(!res.ok){
-        if(statusEl){statusEl.style.color='var(--red)';statusEl.innerHTML='<i class="ti ti-x"></i> '+(data.error||'Failed');}
-        doneCount++;
-        if(doneCount===total) finishBulkMpesa();
-        continue;
-      }
-      if(statusEl){statusEl.style.color='var(--amber)';statusEl.innerHTML='<i class="ti ti-clock"></i> Waiting for PIN...';}
-      watchBulkMpesaTransaction(s.id,data.checkoutRequestId,()=>{
-        doneCount++;
-        if(doneCount===total) finishBulkMpesa();
-      });
-    }catch(e){
-      if(statusEl){statusEl.style.color='var(--red)';statusEl.innerHTML='<i class="ti ti-x"></i> Connection error';}
-      doneCount++;
-      if(doneCount===total) finishBulkMpesa();
-    }
-    if(i<withPhone.length-1) await new Promise(r=>setTimeout(r,700)); // stagger so Daraja isn't hit all at once
-  }
-}
-function watchBulkMpesaTransaction(sessionId,checkoutRequestId,onDone){
-  let elapsed=0;
-  const timer=setInterval(async ()=>{
-    elapsed+=3000;
-    const {data}=await sb.from('mpesa_transactions').select('*').eq('checkout_request_id',checkoutRequestId).maybeSingle();
-    const statusEl=document.getElementById('bulk-status-'+sessionId);
-    if(data && data.status==='success'){
-      clearInterval(timer);
-      if(statusEl){statusEl.style.color='var(--green);';statusEl.innerHTML='<i class="ti ti-check"></i> Paid';}
-      onDone();
-    }else if(data && data.status==='failed'){
-      clearInterval(timer);
-      if(statusEl){statusEl.style.color='var(--red)';statusEl.innerHTML='<i class="ti ti-x"></i> Declined/cancelled';}
-      onDone();
-    }else if(elapsed>180000){
-      clearInterval(timer);
-      if(statusEl){statusEl.style.color='var(--ink3)';statusEl.innerHTML='<i class="ti ti-clock-x"></i> No response';}
-      onDone();
-    }
-  },3000);
-  bulkMpesaPollTimers.push(timer);
-}
-function finishBulkMpesa(){
-  document.getElementById('bulk-mpesa-done-btn').style.display='block';
-}
-function closeBulkMpesaModal(){
-  bulkMpesaPollTimers.forEach(t=>clearInterval(t));
-  bulkMpesaPollTimers=[];
-  document.getElementById('bulk-mpesa-modal').style.display='none';
 }
 
 function routeCard(url,name,idnum){
@@ -3262,21 +3040,8 @@ function switchView(v){
   }else if(cameraEnabled && !mainStream){
     startMainScanner();
   }
-  // stop any bulk M-Pesa status-polling timers if the owner navigates away
-  // while a batch send is still tracking — same reason as the camera stream
-  // above: a background setInterval doesn't know to stop itself just because
-  // its own screen isn't visible anymore, and left running it's a steady
-  // stream of network calls competing with everything else, felt worst as
-  // scroll jank. The actual payments aren't affected — Safaricom's callback
-  // updates the database regardless, and the realtime subscription already
-  // refreshes the Sessions table when that happens; this timer was only ever
-  // for this one modal's own live status list.
-  if(v!=='sessions' && typeof bulkMpesaPollTimers!=='undefined' && bulkMpesaPollTimers.length){
-    bulkMpesaPollTimers.forEach(t=>clearInterval(t));
-    bulkMpesaPollTimers=[];
-    const bm=document.getElementById('bulk-mpesa-modal');
-    if(bm) bm.style.display='none';
-  }
+  // clean up an orphaned single-payment poll timer if the owner navigates
+  // away with the payment modal already closed but its timer still running
   if(typeof mpesaPollTimer!=='undefined' && mpesaPollTimer){
     const pm=document.getElementById('payment-modal');
     if(!pm || pm.style.display!=='flex'){ clearInterval(mpesaPollTimer); mpesaPollTimer=null; }
@@ -3784,36 +3549,6 @@ function filterTable(tbodyId,query){
     emptyRow.style.display='none';
   }
 }
-// ── bulk M-Pesa selection (Sessions tab) ────────────────────────────────────
-let bulkSelectedIds=new Set();
-function toggleBulkSelect(sessionId,checked){
-  if(checked) bulkSelectedIds.add(sessionId);
-  else bulkSelectedIds.delete(sessionId);
-  updateBulkBar();
-}
-function clearBulkSelection(){
-  bulkSelectedIds.clear();
-  document.querySelectorAll('.bulk-select-cb').forEach(cb=>cb.checked=false);
-  updateBulkBar();
-}
-function updateBulkBar(){
-  // drop any selected ids that no longer refer to an active session (signed
-  // out individually, deleted, etc.) so the count never lies
-  bulkSelectedIds=new Set([...bulkSelectedIds].filter(id=>{
-    const s=sessions.find(x=>x.id===id);
-    return s && !s.signedOut;
-  }));
-  const bar=document.getElementById('bulk-mpesa-bar');
-  const countEl=document.getElementById('bulk-count');
-  if(!bar||!countEl)return;
-  if(bulkSelectedIds.size>0){
-    bar.style.display='flex';
-    countEl.textContent=bulkSelectedIds.size;
-  }else{
-    bar.style.display='none';
-  }
-}
-
 function sessionRowHtml(s,num,mode){
   let timecell,badge,outcell,elapsedMs;
   const now=Date.now();
@@ -3865,13 +3600,7 @@ function sessionRowHtml(s,num,mode){
   const sinceCell=mode==='debt'
     ?`<td data-label="Since">${debtSince[s.idnum.toLowerCase().trim()]?fmtDate(debtSince[s.idnum.toLowerCase().trim()]):'—'}</td>`
     :'';
-  // bulk-select checkbox — Sessions tab only, and only for people still active
-  // (already-signed-out rows are already paid, nothing to bulk-charge there)
-  const checkCell=mode==='sessions'
-    ?`<td style="padding-left:12px;padding-right:0;">${!s.signedOut?`<input type="checkbox" class="bulk-select-cb" data-id="${s.id}" onchange="toggleBulkSelect('${s.id}',this.checked)" ${bulkSelectedIds.has(s.id)?'checked':''}/>`:''}</td>`
-    :'';
   return`<tr>
-    ${checkCell}
     <td class="td-num" data-label="#">${String(num).padStart(2,'0')}</td>
     <td class="td-name td-editable" data-label="Name" onclick="startEdit(this,'${s.id}','name')">${s.name}<span class="edit-hint">✎</span></td>
     <td class="td-id td-editable" data-label="ID number" onclick="startEdit(this,'${s.id}','idnum')">${s.idnum}<span class="edit-hint">✎</span></td>
@@ -3970,11 +3699,10 @@ function settleDebtor(idnum){
 
 function renderSessions(){
   const tb=document.getElementById('sessions-tb');
-  if(!sessions.length){tb.innerHTML='<tr class="empty-row"><td colspan="13">No sessions yet</td></tr>';updateBulkBar();return;}
-  tb.innerHTML=sessions.map((s,i)=>sessionRowHtml(s,i+1,'sessions')).join('');
+  if(!sessions.length){tb.innerHTML='<tr class="empty-row"><td colspan="12">No sessions yet</td></tr>';return;}
+  tb.innerHTML=sessions.map((s,i)=>sessionRowHtml(s,i+1)).join('');
   const q=document.getElementById('search-sessions');
   if(q&&q.value.trim()) filterTable('sessions-tb',q.value);
-  updateBulkBar();
 }
 async function clearAll(){
   if(!await showConfirmModal({title:'Clear all sessions?',message:'This deletes every session record. This can\u2019t be undone.',confirmText:'Clear all',danger:true,icon:'ti-trash'}))return;
@@ -4508,3 +4236,4 @@ window.startBikeCanvas=function(){
 
 </body>
 </html>
+  
