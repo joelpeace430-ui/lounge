@@ -408,6 +408,8 @@ body.dark .td-id{color:#e2e8f0;}
 .cal-day-num{font-size:13px;font-weight:600;font-family:var(--mono);color:var(--ink);letter-spacing:-.01em;}
 .cal-day-count{font-size:9px;font-weight:700;color:var(--green);background:var(--green-bg);border-radius:8px;padding:1px 6px;letter-spacing:.03em;}
 .cal-day-count.empty-count{visibility:hidden;}
+.cal-day-rev{font-size:8.5px;font-weight:600;color:var(--ink3);font-family:var(--mono);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.cal-day.selected .cal-day-rev{color:rgba(0,0,0,.6);}
 .cal-list-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);}
 .cal-list-item:last-child{border-bottom:none;}
 .cal-list-info{flex:1;min-width:0;}
@@ -1362,6 +1364,10 @@ body.dark{
               <button class="btn-sm" onclick="calToday()">Today</button>
             </div>
           </div>
+          <div style="padding:12px 18px;background:var(--surface2);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-size:12px;color:var(--ink3);">Total this month</span>
+            <span id="cal-month-revenue" style="font-size:15px;font-weight:700;color:var(--green);font-family:var(--mono);">KSh 0</span>
+          </div>
           <div class="cal-grid-wrap" style="padding:18px;">
             <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;"></div>
           </div>
@@ -1372,6 +1378,7 @@ body.dark{
               <div class="panel-icon"><i class="ti ti-list-details"></i></div>
               <span id="cal-day-label">Select a day</span>
             </div>
+            <span id="cal-day-revenue" style="font-size:13px;font-weight:700;color:var(--green);font-family:var(--mono);"></span>
           </div>
           <div id="cal-day-list" style="padding:14px 18px;">
             <p style="font-size:13px;color:var(--ink3);">Click a day on the calendar to see sessions from that day.</p>
@@ -1781,7 +1788,7 @@ let realtimeChannel = null;
 // local caches — kept in sync with Supabase so the many render functions
 // below can stay synchronous. Mutations write through to Supabase; sessions
 // and debts also get pushed to every other device via realtime.
-let profileCache = { rate:0, minCharge:0, round:'none' };
+let profileCache = { rate:0, minCharge:0, round:'none', resetMode:'clear' };
 let customerDirectory = {};
 let dailyTotals = {};
 
@@ -1816,11 +1823,11 @@ async function loadAllData(displayName){
     // don't recreate the row, or we'd risk wiping out a rate that's actually saved fine.
     console.error('Could not load profile — pricing may show stale values until this is fixed:',profileErr.message);
   } else if(profile){
-    profileCache = { rate: profile.rate_per_hour||0, minCharge: profile.min_charge||0, round: profile.round_mode||'none' };
+    profileCache = { rate: profile.rate_per_hour||0, minCharge: profile.min_charge||0, round: profile.round_mode||'none', resetMode: profile.reset_mode||'clear' };
   } else {
     // genuinely no profile row yet (e.g. the signup trigger didn't run for this account) —
     // create one now so saving pricing later actually has a row to write to.
-    profileCache = { rate:0, minCharge:0, round:'none' };
+    profileCache = { rate:0, minCharge:0, round:'none', resetMode:'clear' };
     const {error:createErr}=await sb.from('profiles').upsert({ id:currentUserId, name: displayName||'Owner', rate_per_hour:0, min_charge:0, round_mode:'none' });
     if(createErr) console.error('Could not create missing profile row:',createErr.message);
   }
@@ -2052,7 +2059,7 @@ function dateKeyOf(ts){
 }
 function todayKey(){return dateKeyOf(Date.now());}
 function getDailyTotals(){return dailyTotals;}
-function getResetMode(){return localStorage.getItem('lm_daily_reset_mode')||'clear';}
+function getResetMode(){return profileCache.resetMode||'clear';}
 // whole-shilling rounding — a per-device display/billing preference, same pattern
 // as reset mode above. When on, every price calc rounds to the nearest whole
 // KSh instead of tracking cents.
@@ -2109,9 +2116,14 @@ async function checkDailyRollover(){
   }
 }
 
-function setResetModeUI(mode){
-  localStorage.setItem('lm_daily_reset_mode',mode);
+async function setResetModeUI(mode){
+  profileCache.resetMode=mode;
   document.querySelectorAll('.reset-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  const {error}=await sb.from('profiles').upsert({id:currentUserId,name:(document.getElementById('owner-name')?.textContent||'Owner'),reset_mode:mode});
+  if(error){
+    console.error('setResetModeUI failed:',error.message);
+    showAlertModal('Could not save this setting: '+error.message,{title:'Save failed',danger:true});
+  }
 }
 
 async function manualResetToday(){
@@ -3180,6 +3192,23 @@ function calToday(){
   renderCalendar();
 }
 
+// revenue for one day: prefer the finalized total (survives even after that
+// day's sessions get cleared) — fall back to computing live from whatever
+// sessions still exist for that date (covers today, and any day that hasn't
+// been finalized yet).
+function revenueForDateKey(dateKey){
+  if(dailyTotals[dateKey]) return dailyTotals[dateKey].revenue;
+  return computeDayStats(dateKey).revenue;
+}
+function computeMonthRevenue(y,m){
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  let total=0;
+  for(let d=1; d<=daysInMonth; d++){
+    total+=revenueForDateKey(dateKeyOf(new Date(y,m,d).getTime()));
+  }
+  return Math.round(total*100)/100;
+}
+
 function renderCalendar(){
   const grid=document.getElementById('cal-grid');
   const label=document.getElementById('cal-month-label');
@@ -3197,16 +3226,23 @@ function renderCalendar(){
 
   for(let d=1; d<=daysInMonth; d++){
     const dateObj=new Date(y,m,d);
+    const dateKey=dateKeyOf(dateObj.getTime());
     const count=sessions.filter(s=>sameDay(s.startTime,dateObj)).length;
+    const dayRevenue=revenueForDateKey(dateKey);
     const isToday=sameDay(today.getTime(),dateObj);
     const isSelected=calSelectedDate && sameDay(calSelectedDate.getTime(),dateObj);
     const hasDebt=Object.keys(debtSince).some(idnum=>getDebt(idnum)>0.01 && sameDay(debtSince[idnum],dateObj));
-    html+=`<div class="cal-day ${isToday?'today':''} ${isSelected?'selected':''} ${hasDebt?'has-debt':''}" onclick="calSelectDay(${y},${m},${d})" ${hasDebt?'title="Someone went into debt on this day"':''}>
+    const titleParts=[];
+    if(hasDebt) titleParts.push('Someone went into debt on this day');
+    if(dayRevenue>0) titleParts.push(fmtPrice(dayRevenue)+' earned that day');
+    html+=`<div class="cal-day ${isToday?'today':''} ${isSelected?'selected':''} ${hasDebt?'has-debt':''}" onclick="calSelectDay(${y},${m},${d})" title="${titleParts.join(' \u2014 ')}">
       <div class="cal-day-num">${d}</div>
       <div class="cal-day-count ${count===0?'empty-count':''}">${count}</div>
+      ${dayRevenue>0?`<div class="cal-day-rev">${fmtPrice(dayRevenue)}</div>`:''}
     </div>`;
   }
   grid.innerHTML=html;
+  document.getElementById('cal-month-revenue').textContent=fmtPrice(computeMonthRevenue(y,m));
   renderCalDayList();
 }
 
@@ -3221,6 +3257,8 @@ function renderCalDayList(){
   const list=document.getElementById('cal-day-list');
   const d=calSelectedDate;
   label.textContent=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const revEl=document.getElementById('cal-day-revenue');
+  if(revEl) revEl.textContent=fmtPrice(revenueForDateKey(dateKeyOf(d.getTime())));
 
   const daySessions=sessions.filter(s=>sameDay(s.startTime,d));
   let sessionsHtml;
