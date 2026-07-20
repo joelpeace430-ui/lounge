@@ -1536,10 +1536,10 @@ body.dark{
             <div class="fg" style="margin-bottom:14px;">
               <label>After 24 hours (midnight)</label>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-                <button class="reset-mode-btn active" data-mode="keep" onclick="setResetModeUI('keep')">
+                <button class="reset-mode-btn" data-mode="keep" onclick="setResetModeUI('keep')">
                   <i class="ti ti-archive"></i> Keep all history
                 </button>
-                <button class="reset-mode-btn" data-mode="clear" onclick="setResetModeUI('clear')">
+                <button class="reset-mode-btn active" data-mode="clear" onclick="setResetModeUI('clear')">
                   <i class="ti ti-eraser"></i> Auto-clear sessions
                 </button>
               </div>
@@ -2052,7 +2052,7 @@ function dateKeyOf(ts){
 }
 function todayKey(){return dateKeyOf(Date.now());}
 function getDailyTotals(){return dailyTotals;}
-function getResetMode(){return localStorage.getItem('lm_daily_reset_mode')||'keep';}
+function getResetMode(){return localStorage.getItem('lm_daily_reset_mode')||'clear';}
 // whole-shilling rounding — a per-device display/billing preference, same pattern
 // as reset mode above. When on, every price calc rounds to the nearest whole
 // KSh instead of tracking cents.
@@ -4236,4 +4236,3 @@ window.startBikeCanvas=function(){
 
 </body>
 </html>
-  
