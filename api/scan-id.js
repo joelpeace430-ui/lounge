@@ -23,14 +23,21 @@
 //   SUPABASE_ANON_KEY   — same anon key used in the frontend
 // ═══════════════════════════════════════════════════════════════════════════
 
-const PROMPT = 'This is a Kenyan national ID card photo. Kenyan ID cards come in different layouts, and the ID number is NOT always in the same position on every card — never rely on position alone as your only signal, but the hints below will help.\n\nYour job is to READ and COPY text exactly as printed — do NOT guess, infer, or autocorrect anything.\n\nIMPORTANT — there are TWO different numbers that can appear on this card and they are easy to mix up:\n1. A short document/serial number — sometimes printed near the top of the card, near or above the photo.\n2. The actual ID NUMBER — always labelled with the literal text "ID NUMBER" or "NAMBARI YA KITAMBULISHO" (Swahili) printed directly next to or above it.\n\nOn MOST cards, the ID NUMBER label sits in the middle of the card, clearly separate from the serial number — on these, there is no ambiguity, just read the number next to the label.\n\nOn SOME card layouts, the ID number instead sits near the TOP of the card, close to the serial number — this is the situation most likely to cause a mistake, so slow down and be extra careful here. On this top layout specifically, the true ID NUMBER is positioned on the LEFT side, while the unrelated serial/document number tends to sit more to the right or above it. Use that as a hint, but always confirm against the literal label text "ID NUMBER" / "NAMBARI YA KITAMBULISHO" printed on the card — read ONLY the digits printed immediately beside or below THAT SPECIFIC label, even if another unlabeled number sits very close by or looks more prominent.\n\nExtract:\n1. Full name: printed in bold capitals, labelled JINA/NAME. Copy every letter exactly as you see it.\n2. National ID number: exactly 8 digits, found immediately next to the literal "ID NUMBER"/"NAMBARI YA KITAMBULISHO" label specifically — never a nearby unlabeled number, regardless of where it sits on the card.\n\nRules:\n- If you are not 100% certain of a character, write UNKNOWN for that field\n- Never guess or fill in missing characters\n- The ID number must be exactly 8 digits — if what is next to the ID NUMBER label is not 8 digits, write UNKNOWN\n- Only fall back to UNKNOWN for the ID number when the card is genuinely illegible (blur, glare, cropped) — if the label and the left-side position hint agree, trust that reading rather than defaulting to UNKNOWN out of caution\n\nReply ONLY in this exact format:\nNAME: <name or UNKNOWN>\nID: <8 digits or UNKNOWN>';
+const PROMPT = 'This is a Kenyan national ID card. Read the full name and the 8-digit ID number exactly as printed. If you are not sure of a character, write UNKNOWN for that field instead of guessing.\n\nReply ONLY in this exact format:\nNAME: <name or UNKNOWN>\nID: <8 digits or UNKNOWN>';
 
 async function readOnce(b64) {
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + process.env.GROQ_API_KEY },
     body: JSON.stringify({
-      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      // meta-llama/llama-4-scout-17b-16e-instruct was decommissioned by Groq —
+      // confirmed via a live 404 from their API. Of Groq's own recommended
+      // replacements (openai/gpt-oss-120b or qwen/qwen3.6-27b), only qwen3.6-27b
+      // actually supports image input — gpt-oss-120b is text-only. Note: Groq
+      // currently serves this as a preview model, so it could move again later;
+      // if reading ever breaks the same way, check console.groq.com/docs/vision
+      // for the current lineup before assuming it's the same bug.
+      model: 'qwen/qwen3.6-27b',
       max_tokens: 60,
       temperature: 0,
       messages: [{ role: 'user', content: [
