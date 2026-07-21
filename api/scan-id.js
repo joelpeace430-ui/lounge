@@ -1,111 +1,75 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// LOUNGE MANAGER — Label-Free Identity Reading Backend (Vercel)
+// LOUNGE MANAGER — Gemini Flash ID Reading Backend (Vercel)
+// ═══════════════════════════════════════════════════════════════════════════
+// INSTRUCTIONS: Go to Vercel -> Project Settings -> Environment Variables
+// and make sure you add: GEMINI_API_KEY (Get a free key from ://google.com)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const MODEL = 'qwen/qwen3.6-27b';
+// Using the recommended fast vision model for structured JSON data extraction
+const MODEL = 'gemini-2.5-flash';
 
-const PROMPT = `You are an absolute raw visual data extractor. Scan this identity card.
-Find and read every text phrase, name, and block of numbers printed across the card face.
-Return your extraction strictly as a valid JSON array of text strings. Do not use custom key labels.
-Example Output Format:
-[
-  "LINE OF TEXT 1",
-  "LINE OF TEXT 2",
-  "LINE OF TEXT 3"
-]`;
+const PROMPT = `You are a high-accuracy document parsing system.
+Analyze this image of a Kenyan national identity card. 
+Extract the person's full name and the main national ID number.
+The main identity number is typically 8 or 9 digits long. Ignore serial numbers or dates.
+You must return your findings strictly matching this schema:
+{
+  "name": "THE_FULL_NAME_HERE",
+  "idnum": "THE_ID_NUMBER_HERE"
+}`;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function readOnce(b64, attempt = 0) {
-  const res = await fetch('https://groq.com', {
+async function readOnce(b64) {
+  // Use Google's standard beta API endpoint to pass structured requests from Vercel
+  const url = `https://googleapis.com{MODEL}:generateContent?key=${process.env.GEMINI_API_KEY}`;
+
+  const payload = {
+    contents: [{
+      parts: [
+        { inlineData: { mimeType: "image/jpeg", data: b64 } },
+        { text: PROMPT }
+      ]
+    }],
+    generationConfig: {
+      // Force Gemini to output a strict code format so it cannot append conversational text fluff
+      responseMimeType: "application/json"
+    }
+  };
+
+  const res = await fetch(url, {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json', 
-      'Authorization': 'Bearer ' + process.env.GROQ_API_KEY 
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      temperature: 0,
-      response_format: { type: "json_object" }, 
-      messages: [{ role: 'user', content: [
-        { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + b64 } },
-        { type: 'text', text: PROMPT },
-      ] }],
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
-    const t = await res.text();
-    console.error(`Vendor API error (status ${res.status}):`, t);
-
-    if (res.status === 429 && attempt < 2) {
-      const match = t.match(/try again in ([\d.]+)s/i);
-      const waitMs = match ? Math.ceil(parseFloat(match[1]) * 1000) + 250 : 3000 * (attempt + 1);
-      await sleep(waitMs);
-      return readOnce(b64, attempt + 1);
-    }
-    throw new Error('read failed');
+    const errorText = await res.text();
+    console.error(`Gemini API error (status ${res.status}):`, errorText);
+    throw new Error('Gemini call failed');
   }
 
   const data = await res.json();
-  
-  // FIXED: Standard array retrieval notation without corrupted optional chain typos
-  const rawContent = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '';
-
-  let extractedName = 'UNKNOWN';
-  let extractedId = 'UNKNOWN';
+  const rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
   try {
-    const parsedData = JSON.parse(rawContent);
-    let rawLines = [];
+    const parsedJson = JSON.parse(rawContent.trim());
+    
+    // Clean up training symbols and asterisks
+    let finalName = parsedJson.name ? parsedJson.name.replace(/[*#]/g, '').trim().toUpperCase() : 'UNKNOWN';
+    let finalId = parsedJson.idnum ? parsedJson.idnum.toString().replace(/\D/g, '').trim() : 'UNKNOWN';
 
-    if (Array.isArray(parsedData)) {
-      rawLines = parsedData;
-    } else if (typeof parsedData === 'object' && parsedData !== null) {
-      rawLines = Object.values(parsedData);
+    // Validate that the ID length matches standard Kenyan document constraints (7 to 9 digits)
+    if (finalId.length < 7 || finalId.length > 9) {
+      finalId = 'UNKNOWN';
     }
 
-    for (let rawLine of rawLines) {
-      if (!rawLine || typeof rawLine !== 'string') continue;
-      let cleanLine = rawLine.trim();
-
-      // Isolate the ID number: Check for 7 to 9 digits (handles Maisha 9-digit layout seamlessly)
-      const digitsOnly = cleanLine.replace(/\s/g, '');
-      const serialMatch = digitsOnly.match(/\d{7,9}/);
-      
-      if (serialMatch && extractedId === 'UNKNOWN') {
-        extractedId = serialMatch[0];
-        continue; 
-      }
-
-      // Filter metadata blocks to capture user name strings
-      const normalUpper = cleanLine.toUpperCase();
-      if (
-        normalUpper.includes('KENYA') || 
-        normalUpper.includes('IDENTITY') || 
-        normalUpper.includes('CARD') ||
-        normalUpper.includes('REPUBLIC') ||
-        normalUpper.includes('MALE') ||
-        normalUpper.includes('FEMALE') ||
-        normalUpper.includes('SEX') ||
-        normalUpper.includes('DATE') ||
-        normalUpper.includes('NATIONALITY') ||
-        cleanLine.length < 3 ||
-        /\d/.test(cleanLine)
-      ) {
-        continue; 
-      }
-
-      if (extractedName === 'UNKNOWN') {
-        extractedName = cleanLine.replace(/[*#]/g, '').toUpperCase();
-      }
-    }
+    return { name: finalName, idnum: finalId };
 
   } catch (parseError) {
-    console.error("String normalization parser failure fallback:", parseError);
+    console.error("Gemini output JSON parsing failed:", rawContent);
+    return { name: 'UNKNOWN', idnum: 'UNKNOWN' };
   }
-
-  return { name: extractedName, idnum: extractedId };
 }
 
 export default async function handler(req, res) {
@@ -115,16 +79,20 @@ export default async function handler(req, res) {
     const { frames, accessToken } = req.body || {};
     if (!accessToken) return res.status(401).json({ error: 'Please log in again' });
     if (!Array.isArray(frames) || !frames.length) return res.status(400).json({ error: 'No image data received' });
-    if (!process.env.GROQ_API_KEY) {
-      return res.status(500).json({ error: 'ID reading is not configured on the server yet' });
+    
+    if (!process.env.GEMINI_API_KEY) {
+      console.error('Missing environment variable: GEMINI_API_KEY');
+      return res.status(500).json({ error: 'Gemini API key is missing on the server' });
     }
 
+    // Verify session token authenticity directly against your Supabase Auth layer
     const userRes = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
       headers: { Authorization: `Bearer ${accessToken}`, apikey: process.env.SUPABASE_ANON_KEY },
     });
     if (!userRes.ok) return res.status(401).json({ error: 'Invalid session — please log in again' });
 
     const results = [];
+    // Process up to 3 frames sequentially to maintain majority voting logic integrity
     for (const b64 of frames.slice(0, 3)) {
       try {
         const singleScan = await readOnce(b64);
@@ -132,29 +100,27 @@ export default async function handler(req, res) {
       } catch (scanErr) {
         results.push({ name: 'UNKNOWN', idnum: 'UNKNOWN' });
       }
-      await sleep(350); 
+      await sleep(200); 
     }
 
-    // Voting aggregation mapping filter array parameters
-    const finalIdsList = results.map(r => r.idnum).filter(id => id !== 'UNKNOWN');
-    const trackedIdCounts = {};
-    finalIdsList.forEach(id => { trackedIdCounts[id] = (trackedIdCounts[id] || 0) + 1; });
-    
-    // FIXED: Correct explicit array indexing matching logic
-    const matchIdEntry = Object.entries(trackedIdCounts).find(([, countValue]) => countValue >= 2);
-    const majorityId = matchIdEntry ? matchIdEntry[0] : (finalIdsList[0] || 'UNKNOWN');
+    // Aggregate ID majority votes
+    const ids = results.map(r => r.idnum).filter(id => id !== 'UNKNOWN');
+    const idCounts = {};
+    ids.forEach(id => { idCounts[id] = (idCounts[id] || 0) + 1; });
+    const majorityIdEntry = Object.entries(idCounts).find(([, c]) => c >= 2);
+    const majorityId = majorityIdEntry ? majorityIdEntry[0] : (ids[0] || 'UNKNOWN');
 
-    const finalNamesList = results.map(r => r.name).filter(nameString => nameString !== 'UNKNOWN');
-    const trackedNameCounts = {};
-    finalNamesList.forEach(name => { trackedNameCounts[name] = (trackedNameCounts[name] || 0) + 1; });
-    
-    // FIXED: Clear syntax multi-dimensional sorting logic values
-    const sortedNamesArray = Object.entries(trackedNameCounts).sort((a, b) => b[1] - a[1]);
-    const majorityName = sortedNamesArray.length > 0 ? sortedNamesArray[0][0] : (finalNamesList[0] || 'UNKNOWN');
+    // Aggregate Name majority votes
+    const names = results.map(r => r.name).filter(n => n !== 'UNKNOWN');
+    const nameCounts = {};
+    names.forEach(n => { nameCounts[n] = (nameCounts[n] || 0) + 1; });
+    const sortedNames = Object.entries(nameCounts).sort((a, b) => b[1] - a[1]);
+    const majorityName = sortedNames.length > 0 ? sortedNames[0][0] : (names[0] || 'UNKNOWN');
 
     return res.status(200).json({ name: majorityName, idnum: majorityId });
+
   } catch (err) {
-    console.error('scan-id main handler execution level error context:', err);
+    console.error('scan-id handler level execution exception:', err);
     return res.status(500).json({ error: 'Could not read card — try again' });
   }
 }
