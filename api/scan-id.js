@@ -1,60 +1,52 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// LOUNGE MANAGER — ID card reading backend
+// LOUNGE MANAGER — ID card reading backend (Fixed for Maisha Cards & Groq Vision)
 // ═══════════════════════════════════════════════════════════════════════════
 // This file exists so the browser never sees which AI vendor/model reads the
-// ID cards, what the prompt is, or any API key. Previously the frontend
-// called the vendor's API directly with a per-owner key pasted into Settings
-// — anyone could open dev tools → Network tab and see exactly which service
-// and model was being used. Now the browser only ever talks to YOUR domain
-// (/api/scan-id), and this file does the actual vendor call server-side.
-//
-// One shared key for the whole app (not per-owner) — set as a Vercel env var,
-// never exposed to any browser.
-//
-// Deploy alongside:
-//   /index.html
-//   /api/mpesa.js
-//   /api/scan-id.js   (this file)
-//   /package.json
+// ID cards, what the prompt is, or any API key.
 //
 // Required environment variable (Vercel → Project → Settings → Environment Variables):
-//   GROQ_API_KEY       — your Groq key, from console.groq.com/keys
+//   GROQ_API_KEY       — your Groq key, from ://groq.com
 //   SUPABASE_URL        — same URL used in the frontend
 //   SUPABASE_ANON_KEY   — same anon key used in the frontend
 // ═══════════════════════════════════════════════════════════════════════════
 
-const PROMPT = 'This is a Kenyan national ID card. Read the full name and the 8-digit ID number exactly as printed. If you are not sure of a character, write UNKNOWN for that field instead of guessing.\n\nReply ONLY in this exact format:\nNAME: <name or UNKNOWN>\nID: <8 digits or UNKNOWN>';
+const PROMPT = 'This is a Kenyan national ID card or Maisha Card. Read the full name and the ID number (or Maisha Namba) exactly as printed. If you are not sure of a character, write UNKNOWN for that field instead of guessing.\n\nReply ONLY in this exact format:\nNAME: <name or UNKNOWN>\nID: <digits or UNKNOWN>';
 
 async function readOnce(b64) {
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  const res = await fetch('https://groq.com', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + process.env.GROQ_API_KEY },
+    headers: { 
+      'Content-Type': 'application/json', 
+      'Authorization': 'Bearer ' + process.env.GROQ_API_KEY 
+    },
     body: JSON.stringify({
-      // meta-llama/llama-4-scout-17b-16e-instruct was decommissioned by Groq —
-      // confirmed via a live 404 from their API. Of Groq's own recommended
-      // replacements (openai/gpt-oss-120b or qwen/qwen3.6-27b), only qwen3.6-27b
-      // actually supports image input — gpt-oss-120b is text-only. Note: Groq
-      // currently serves this as a preview model, so it could move again later;
-      // if reading ever breaks the same way, check console.groq.com/docs/vision
-      // for the current lineup before assuming it's the same bug.
-      model: 'qwen/qwen3.6-27b',
+      // Using Groq's stable production-grade vision model instead of qwen preview 
+      model: 'llama-3.2-11b-vision-preview',
       max_tokens: 60,
       temperature: 0,
-      messages: [{ role: 'user', content: [
-        { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + b64 } },
-        { type: 'text', text: PROMPT },
-      ] }],
+      messages: [{ 
+        role: 'user', 
+        content: [
+          { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + b64 } },
+          { type: 'text', text: PROMPT },
+        ] 
+      }],
     }),
   });
+
   if (!res.ok) {
     const t = await res.text();
     console.error(`Vendor API error (status ${res.status}, image ~${Math.ceil(b64.length*0.75/1024)}KB):`, t);
     throw new Error('read failed');
   }
+
   const data = await res.json();
   const txt = data.choices?.[0]?.message?.content || '';
+  
   const nm = txt.match(/NAME:\s*(.+)/i);
-  const id = txt.match(/ID:\s*(\d{8})/i); // must be exactly 8 digits
+  // FIX: Changed from \d{8} to \d{7,9} to support standard 8-digit IDs and 9-digit Maisha Cards [1]
+  const id = txt.match(/ID:\s*(\d{7,9})/i); 
+
   return {
     name: nm ? nm[1].trim() : 'UNKNOWN',
     idnum: id ? id[1].trim() : 'UNKNOWN',
@@ -68,20 +60,22 @@ export default async function handler(req, res) {
     const { frames, accessToken } = req.body || {};
     if (!accessToken) return res.status(401).json({ error: 'Please log in again' });
     if (!Array.isArray(frames) || !frames.length) return res.status(400).json({ error: 'No image data received' });
+    
     if (!process.env.GROQ_API_KEY) {
       console.error('Missing environment variable: GROQ_API_KEY');
       return res.status(500).json({ error: 'ID reading is not configured on the server yet' });
     }
 
-    // verify the caller is actually a logged-in owner — this is a shared key
-    // now, so an unauthenticated request should never be able to spend it
+    // Verify user session against Supabase backend
     const userRes = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
-      headers: { Authorization: `Bearer ${accessToken}`, apikey: process.env.SUPABASE_ANON_KEY },
+      headers: { 
+        Authorization: `Bearer ${accessToken}`, 
+        apikey: process.env.SUPABASE_ANON_KEY 
+      },
     });
     if (!userRes.ok) return res.status(401).json({ error: 'Invalid session — please log in again' });
 
-    // same 3-frame majority-vote logic that used to live in the browser —
-    // moved here too, so the strategy itself isn't visible in page source either
+    // Multi-frame majority-vote processing
     const results = await Promise.all(frames.slice(0, 3).map(b64 => readOnce(b64)));
 
     const ids = results.map(r => r.idnum);
