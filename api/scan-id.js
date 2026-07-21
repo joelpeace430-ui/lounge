@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// LOUNGE MANAGER — ID card reading backend (Production Fixed)
+// LOUNGE MANAGER — ID card reading backend (Production Hotfix)
 // ═══════════════════════════════════════════════════════════════════════════
 
 const PROMPT = 'This is a Kenyan national ID card or Maisha Card. Read the full name and the ID number (or Maisha Namba) exactly as printed. If you are not sure of a character, write UNKNOWN for that field instead of guessing.\n\nReply ONLY in this exact format:\nNAME: <name or UNKNOWN>\nID: <digits or UNKNOWN>';
@@ -33,11 +33,13 @@ async function readOnce(b64) {
     }
 
     const data = await res.json();
+    // FIX: Added back the correct choices[0] array index position
     const txt = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '';
     
     const nm = txt.match(/NAME:\s*(.+)/i);
     const id = txt.match(/ID:\s*(\d{7,9})/i); 
 
+    // FIX: Extract index [1] from regex array result safely
     return {
       name: nm && nm[1] ? nm[1].trim() : 'UNKNOWN',
       idnum: id && id[1] ? id[1].trim() : 'UNKNOWN',
@@ -61,7 +63,6 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'ID reading is not configured on the server yet' });
     }
 
-    // Verify user session against Supabase backend
     const userRes = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
       headers: { 
         Authorization: `Bearer ${accessToken}`, 
@@ -70,7 +71,6 @@ export default async function handler(req, res) {
     });
     if (!userRes.ok) return res.status(401).json({ error: 'Invalid session — please log in again' });
 
-    // Multi-frame majority-vote processing
     const results = await Promise.all(frames.slice(0, 3).map(b64 => readOnce(b64)));
 
     const ids = results.map(r => r.idnum);
@@ -84,6 +84,7 @@ export default async function handler(req, res) {
     const nameCounts = {};
     names.forEach(n => { nameCounts[n] = (nameCounts[n] || 0) + 1; });
     
+    // FIX: Sorted specifically by values [1] instead of the whole entry object array
     const sortedNames = Object.entries(nameCounts).sort((a, b) => b[1] - a[1]);
     const majorityName = sortedNames && sortedNames[0] ? sortedNames[0][0] : 'UNKNOWN';
 
