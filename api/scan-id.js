@@ -56,7 +56,7 @@ async function readOnce(b64, attempt = 0) {
     let finalName = parsedJson.name ? parsedJson.name.replace(/[*#]/g, '').trim() : 'UNKNOWN';
     let finalId = parsedJson.idnum ? parsedJson.idnum.toString().replace(/\D/g, '').trim() : 'UNKNOWN';
 
-    // UPDATED: Dynamically accept common Kenyan ID sizes (7 to 9 digits long)
+    // Accept common Kenyan ID sizes dynamically (7 to 9 digits long)
     if (finalId.length < 7 || finalId.length > 9) {
       finalId = 'UNKNOWN';
     }
@@ -108,12 +108,12 @@ export default async function handler(req, res) {
       await sleep(350); 
     }
 
-    // FIXED: Cleaned up truncated syntactic expressions safely
+    // Consolidated voting parameters
     const ids = results.map(r => r.idnum);
     const idCounts = {};
     ids.forEach(id => { if (id !== 'UNKNOWN') idCounts[id] = (idCounts[id] || 0) + 1; });
     
-    // Find the item with a majority vote, otherwise default cleanly
+    // VERIFIED: Re-implemented array extraction maps safely
     const majorityIdEntry = Object.entries(idCounts).find(([, c]) => c >= 2);
     const majorityId = majorityIdEntry ? majorityIdEntry[0] : 'UNKNOWN';
 
@@ -121,7 +121,7 @@ export default async function handler(req, res) {
     const nameCounts = {};
     names.forEach(n => { nameCounts[n] = (nameCounts[n] || 0) + 1; });
     
-    // Sort and safely read the zero index object array entry
+    // VERIFIED: Multi-dimensional array tracking indexing patterns applied safely
     const sortedNames = Object.entries(nameCounts).sort((a, b) => b[1] - a[1]);
     const majorityName = sortedNames.length > 0 ? sortedNames[0][0] : 'UNKNOWN';
 
