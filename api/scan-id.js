@@ -23,21 +23,24 @@
 //   SUPABASE_ANON_KEY   — same anon key used in the frontend
 // ═══════════════════════════════════════════════════════════════════════════
 
-const PROMPT = 'Extract the id number and the name  ';
+// meta-llama/llama-4-scout-17b-16e-instruct and meta-llama/llama-4-maverick-17b-128e-instruct
+// were both deprecated by Groq (June 17, 2026 and Feb 20, 2026 respectively). Groq's official
+// migration target for both is openai/gpt-oss-120b — but that model is TEXT-ONLY, no image
+// input. qwen/qwen3.6-27b is currently the only vision-capable model in Groq's lineup.
+// It's served as a preview model, so it could move again — if reading ever breaks the same
+// way, check console.groq.com/docs/vision for the current vision-capable model before
+// assuming it's the same bug.
+const MODEL = 'qwen/qwen3.6-27b';
+
+// Explicit two-line format so the regexes below can reliably parse the response.
+const PROMPT = 'Read this ID card. Reply with exactly two lines and nothing else:\nNAME: <full name>\nID: <8-digit ID number>';
 
 async function readOnce(b64) {
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + process.env.GROQ_API_KEY },
     body: JSON.stringify({
-      // meta-llama/llama-4-scout-17b-16e-instruct was decommissioned by Groq —
-      // confirmed via a live 404 from their API. Of Groq's own recommended
-      // replacements (openai/gpt-oss-120b or qwen/qwen3.6-27b), only qwen3.6-27b
-      // actually supports image input — gpt-oss-120b is text-only. Note: Groq
-      // currently serves this as a preview model, so it could move again later;
-      // if reading ever breaks the same way, check console.groq.com/docs/vision
-      // for the current lineup before assuming it's the same bug.
-      model: 'meta-llama/llama-4-scout-17b',
+      model: MODEL,
       max_tokens: 60,
       temperature: 0,
       messages: [{ role: 'user', content: [
