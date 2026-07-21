@@ -6,14 +6,14 @@ const PROMPT = 'This is a Kenyan national ID card or Maisha Card. Read the full 
 
 async function readOnce(b64) {
   try {
-    const res = await fetch('https://groq.com', {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json', 
         'Authorization': 'Bearer ' + process.env.GROQ_API_KEY 
       },
       body: JSON.stringify({
-        model: 'llama-3.2-11b-vision-preview',
+        model: 'qwen/qwen3.6-27b',
         max_tokens: 60,
         temperature: 0,
         messages: [{ 
