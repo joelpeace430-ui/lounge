@@ -3231,7 +3231,8 @@ function renderCalendar(){
     const dayRevenue=revenueForDateKey(dateKey);
     const isToday=sameDay(today.getTime(),dateObj);
     const isSelected=calSelectedDate && sameDay(calSelectedDate.getTime(),dateObj);
-    const hasDebt=Object.keys(debtSince).some(idnum=>getDebt(idnum)>0.01 && sameDay(debtSince[idnum],dateObj));
+    const hasDebt=Object.keys(debtSince).some(idnum=>getDebt(idnum)>0.01 && sameDay(debtSince[idnum],dateObj))
+      || sessions.some(s=>sameDay(s.startTime,dateObj) && getDebt(s.idnum)>0.01);
     const titleParts=[];
     if(hasDebt) titleParts.push('Someone went into debt on this day');
     if(dayRevenue>0) titleParts.push(fmtPrice(dayRevenue)+' earned that day');
