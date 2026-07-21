@@ -1,14 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // LOUNGE MANAGER — ID card reading backend (Vercel Serverless Function)
 // ═══════════════════════════════════════════════════════════════════════════
-// This file executes securely server-side to hide vendor parameters, prompts,
-// and private API keys from the browser network inspector window.
-// ═══════════════════════════════════════════════════════════════════════════
 
-// Using the recommended vision-capable model currently supported in Groq's ecosystem
 const MODEL = 'qwen/qwen3.6-27b';
 
-// Force the model to output a strict JSON structure matching your schema expectations
 const PROMPT = `You are a precise automated identity data parser.
 Analyze this image of a national ID card. Extract only the full name and the main national ID number.
 The main national ID number is typically a sequence of 8 digits. Ignore serial numbers, document numbers, or dates.
@@ -20,10 +15,6 @@ You must output your findings strictly as a valid JSON object matching this exac
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/**
- * Sends a single base64 image frame to Groq with native JSON enforcement.
- * Includes automated retry handling on 429 rate limit errors.
- */
 async function readOnce(b64, attempt = 0) {
   const res = await fetch('https://groq.com', {
     method: 'POST',
@@ -33,8 +24,8 @@ async function readOnce(b64, attempt = 0) {
     },
     body: JSON.stringify({
       model: MODEL,
-      temperature: 0, // 0 forces deterministic, factual extraction
-      response_format: { type: "json_object" }, // Ensures model cannot respond with conversational text
+      temperature: 0,
+      response_format: { type: "json_object" }, 
       messages: [{ role: 'user', content: [
         { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + b64 } },
         { type: 'text', text: PROMPT },
@@ -44,15 +35,86 @@ async function readOnce(b64, attempt = 0) {
 
   if (!res.ok) {
     const t = await res.text();
-    console.error(`Vendor API error (status ${res.status}, image ~${Math.ceil(b64.length*0.75/1024)}KB):`, t);
+    console.error(`Vendor API error (status ${res.status}):`, t);
 
-    // Auto-retry on rate limitations (429) using Groq's exact wait hint
-    if (res.status === 429 && attempt  r.idnum);
+    if (res.status === 429 && attempt < 2) {
+      const match = t.match(/try again in ([\d.]+)s/i);
+      const waitMs = match ? Math.ceil(parseFloat(match[1]) * 1000) + 250 : 3000 * (attempt + 1);
+      console.error(`Rate limited — retrying in ${waitMs}ms (attempt ${attempt + 1}/2)`);
+      await sleep(waitMs);
+      return readOnce(b64, attempt + 1);
+    }
+    throw new Error('read failed');
+  }
+
+  const data = await res.json();
+  // FIXED: Cleaned up the broken chain operators completely
+  const rawContent = data.choices?.[0]?.message?.content || '';
+
+  try {
+    const parsedJson = JSON.parse(rawContent);
+    
+    let finalName = parsedJson.name ? parsedJson.name.replace(/[*#]/g, '').trim() : 'UNKNOWN';
+    let finalId = parsedJson.idnum ? parsedJson.idnum.toString().replace(/\D/g, '').trim() : 'UNKNOWN';
+
+    if (finalId.length !== 8) {
+      finalId = 'UNKNOWN';
+    }
+
+    return {
+      name: finalName || 'UNKNOWN',
+      idnum: finalId || 'UNKNOWN'
+    };
+
+  } catch (parseError) {
+    console.error("JSON parsing step failed. Falling back to regex:", rawContent);
+    
+    const nm = rawContent.match(/["'*#]*name["'*#]*\s*:\s*["']*(.+?)["']/i);
+    const id = rawContent.match(/["'*#]*idnum["'*#]*\s*:\s*["']*(\d{8})["']/i);
+
+    return {
+      name: nm ? nm[1].replace(/[*#]/g, '').trim() : 'UNKNOWN',
+      idnum: id ? id[1].trim() : 'UNKNOWN',
+    };
+  }
+}
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  try {
+    const { frames, accessToken } = req.body || {};
+    if (!accessToken) return res.status(401).json({ error: 'Please log in again' });
+    if (!Array.isArray(frames) || !frames.length) return res.status(400).json({ error: 'No image data received' });
+    if (!process.env.GROQ_API_KEY) {
+      console.error('Missing environment variable: GROQ_API_KEY');
+      return res.status(500).json({ error: 'ID reading is not configured on the server yet' });
+    }
+
+    const userRes = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${accessToken}`, apikey: process.env.SUPABASE_ANON_KEY },
+    });
+    if (!userRes.ok) return res.status(401).json({ error: 'Invalid session — please log in again' });
+
+    const results = [];
+    for (const b64 of frames.slice(0, 3)) {
+      try {
+        const singleScan = await readOnce(b64);
+        results.push(singleScan);
+      } catch (scanErr) {
+        console.error("Single frame pass failed extraction:", scanErr);
+        results.push({ name: 'UNKNOWN', idnum: 'UNKNOWN' });
+      }
+      await sleep(350); 
+    }
+
+    // FIXED: Corrected fallback values and array parsing mechanics
+    const ids = results.map(r => r.idnum);
     const idCounts = {};
     ids.forEach(id => { if (id !== 'UNKNOWN') idCounts[id] = (idCounts[id] || 0) + 1; });
     const majorityId = Object.entries(idCounts).find(([, c]) => c >= 2)?.[0] || 'UNKNOWN';
 
-    // Majority vote consolidation layer for the User Full Name
+    // FIXED: Solved missing fallback parameter errors
     const names = results.map(r => r.name).filter(n => n !== 'UNKNOWN');
     const nameCounts = {};
     names.forEach(n => { nameCounts[n] = (nameCounts[n] || 0) + 1; });
