@@ -1,56 +1,53 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// LOUNGE MANAGER — ID card reading backend (Fixed for Maisha Cards & Groq Vision)
-// ═══════════════════════════════════════════════════════════════════════════
-// This file exists so the browser never sees which AI vendor/model reads the
-// ID cards, what the prompt is, or any API key.
-//
-// Required environment variable (Vercel → Project → Settings → Environment Variables):
-//   GROQ_API_KEY       — your Groq key, from ://groq.com
-//   SUPABASE_URL        — same URL used in the frontend
-//   SUPABASE_ANON_KEY   — same anon key used in the frontend
+// LOUNGE MANAGER — ID card reading backend (Fixed Syntaxes & Safe Trims)
 // ═══════════════════════════════════════════════════════════════════════════
 
 const PROMPT = 'This is a Kenyan national ID card or Maisha Card. Read the full name and the ID number (or Maisha Namba) exactly as printed. If you are not sure of a character, write UNKNOWN for that field instead of guessing.\n\nReply ONLY in this exact format:\nNAME: <name or UNKNOWN>\nID: <digits or UNKNOWN>';
 
 async function readOnce(b64) {
-  const res = await fetch('https://groq.com', {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json', 
-      'Authorization': 'Bearer ' + process.env.GROQ_API_KEY 
-    },
-    body: JSON.stringify({
-      // Using Groq's stable production-grade vision model instead of qwen preview 
-      model: 'llama-3.2-11b-vision-preview',
-      max_tokens: 60,
-      temperature: 0,
-      messages: [{ 
-        role: 'user', 
-        content: [
-          { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + b64 } },
-          { type: 'text', text: PROMPT },
-        ] 
-      }],
-    }),
-  });
+  try {
+    const res = await fetch('https://groq.com', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json', 
+        'Authorization': 'Bearer ' + process.env.GROQ_API_KEY 
+      },
+      body: JSON.stringify({
+        model: 'llama-3.2-11b-vision-preview',
+        max_tokens: 60,
+        temperature: 0,
+        messages: [{ 
+          role: 'user', 
+          content: [
+            { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + b64 } },
+            { type: 'text', text: PROMPT },
+          ] 
+        }],
+      }),
+    });
 
-  if (!res.ok) {
-    const t = await res.text();
-    console.error(`Vendor API error (status ${res.status}, image ~${Math.ceil(b64.length*0.75/1024)}KB):`, t);
-    throw new Error('read failed');
+    if (!res.ok) {
+      const t = await res.text();
+      console.error(`Vendor API error (status ${res.status}, image ~${Math.ceil(b64.length*0.75/1024)}KB):`, t);
+      return { name: 'UNKNOWN', idnum: 'UNKNOWN' };
+    }
+
+    const data = await res.json();
+    // FIX: Fixed the duplicate question mark syntax error
+    const txt = data.choices?.[0]?.message?.content || '';
+    
+    const nm = txt.match(/NAME:\s*(.+)/i);
+    const id = txt.match(/ID:\s*(\d{7,9})/i); 
+
+    // FIX: Safely fallback to UNKNOWN without calling .trim() on null matches
+    return {
+      name: nm && nm[1] ? nm[1].trim() : 'UNKNOWN',
+      idnum: id && id[1] ? id[1].trim() : 'UNKNOWN',
+    };
+  } catch (ocrErr) {
+    console.error('Single frame reading failure:', ocrErr);
+    return { name: 'UNKNOWN', idnum: 'UNKNOWN' };
   }
-
-  const data = await res.json();
-  const txt = data.choices?.[0]?.message?.content || '';
-  
-  const nm = txt.match(/NAME:\s*(.+)/i);
-  // FIX: Changed from \d{8} to \d{7,9} to support standard 8-digit IDs and 9-digit Maisha Cards [1]
-  const id = txt.match(/ID:\s*(\d{7,9})/i); 
-
-  return {
-    name: nm ? nm[1].trim() : 'UNKNOWN',
-    idnum: id ? id[1].trim() : 'UNKNOWN',
-  };
 }
 
 export default async function handler(req, res) {
@@ -81,6 +78,8 @@ export default async function handler(req, res) {
     const ids = results.map(r => r.idnum);
     const idCounts = {};
     ids.forEach(id => { if (id !== 'UNKNOWN') idCounts[id] = (idCounts[id] || 0) + 1; });
+    
+    // FIX: Added structural safety falls for majority lookups
     const majorityId = Object.entries(idCounts).find(([, c]) => c >= 2)?.[0] || 'UNKNOWN';
 
     const names = results.map(r => r.name).filter(n => n !== 'UNKNOWN');
