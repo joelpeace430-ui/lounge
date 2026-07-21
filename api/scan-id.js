@@ -23,7 +23,7 @@
 //   SUPABASE_ANON_KEY   — same anon key used in the frontend
 // ═══════════════════════════════════════════════════════════════════════════
 
-const PROMPT = 'This is a Kenyan national ID card. Read the full name and the 8-digit ID number exactly as printed. If you are not sure of a character, write UNKNOWN for that field instead of guessing.\n\nReply ONLY in this exact format:\nNAME: <name or UNKNOWN>\nID: <8 digits or UNKNOWN>';
+const PROMPT = 'Extract the id number and the name  ';
 
 async function readOnce(b64) {
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -37,7 +37,7 @@ async function readOnce(b64) {
       // currently serves this as a preview model, so it could move again later;
       // if reading ever breaks the same way, check console.groq.com/docs/vision
       // for the current lineup before assuming it's the same bug.
-      model: 'qwen/qwen3.6-27b',
+      model: 'meta-llama/llama-4-scout-17b',
       max_tokens: 60,
       temperature: 0,
       messages: [{ role: 'user', content: [
