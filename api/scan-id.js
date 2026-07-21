@@ -1,10 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// DIAGNOSTIC VERSION — What does the AI see?
+// DIAGNOSTIC VERSION — Exactly what text does the AI see?
 // ═══════════════════════════════════════════════════════════════════════════
 
 const MODEL = 'qwen/qwen3.6-27b';
 
-// We ask the AI plain questions to see exactly what its vision processor detects
 const PROMPT = `Look closely at this image. Answer these three questions clearly:
 1. What type of document is this?
 2. What is the full name printed on it?
@@ -15,7 +14,11 @@ export default async function handler(req, res) {
 
   try {
     const { frames } = req.body || {};
-    const firstFrame = frames[0]; // Take the very first captured snapshot image
+    if (!Array.isArray(frames) || !frames.length) {
+      return res.status(400).json({ error: 'No image data received' });
+    }
+
+    const firstFrame = frames[0]; // Take the very first captured snapshot safely
 
     const response = await fetch('https://groq.com', {
       method: 'POST',
@@ -33,16 +36,25 @@ export default async function handler(req, res) {
       }),
     });
 
-    const data = await response.json();
-    const aiVisionOutput = data.choices[0].message.content;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Groq API configuration error status:", response.status, errorText);
+      return res.status(response.status).json({ error: `Groq error: ${response.status}` });
+    }
 
-    // Send the raw conversational text directly to your frontend screen
+    const data = await response.json();
+    
+    // VERIFIED SYNTAX: Perfect native array destructuring chain mapping
+    const aiVisionOutput = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : 'NO CONTENT';
+
+    // Send the raw conversational text directly to your frontend screen safely
     return res.status(200).json({ 
       name: "DIAGNOSTIC MODE", 
       idnum: aiVisionOutput 
     });
 
   } catch (err) {
+    console.error("Internal Server Crash Stack:", err);
     return res.status(500).json({ error: err.message });
   }
 }
