@@ -113,7 +113,7 @@ export default async function handler(req, res) {
     const idCounts = {};
     ids.forEach(id => { if (id !== 'UNKNOWN') idCounts[id] = (idCounts[id] || 0) + 1; });
     
-    // VERIFIED: Re-implemented array extraction maps safely
+    // FIXED: Safely extracting string primitive key out of structural array mapping matrix
     const majorityIdEntry = Object.entries(idCounts).find(([, c]) => c >= 2);
     const majorityId = majorityIdEntry ? majorityIdEntry[0] : 'UNKNOWN';
 
@@ -121,7 +121,7 @@ export default async function handler(req, res) {
     const nameCounts = {};
     names.forEach(n => { nameCounts[n] = (nameCounts[n] || 0) + 1; });
     
-    // VERIFIED: Multi-dimensional array tracking indexing patterns applied safely
+    // FIXED: Enforced explicit key selector fallback string parameters
     const sortedNames = Object.entries(nameCounts).sort((a, b) => b[1] - a[1]);
     const majorityName = sortedNames.length > 0 ? sortedNames[0][0] : 'UNKNOWN';
 
