@@ -33,7 +33,7 @@
 const MODEL = 'qwen/qwen3.6-27b';
 
 // Explicit two-line format so the regexes below can reliably parse the response.
-const PROMPT = 'Read this ID card. Reply with exactly two lines and nothing else:\nNAME: <full name>\nID: <8-digit ID number>';
+const PROMPT = 'Extract only the  ID name   and ID number';
 
 async function readOnce(b64) {
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
