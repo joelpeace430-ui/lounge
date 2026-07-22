@@ -2,7 +2,7 @@
 // LOUNGE MANAGER — ID card reading backend (Production Hotfix)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const PROMPT = 'This is a Kenyan national ID card or Maisha Card. You may reason through what you see first — think about the layout, the printed labels, anything unclear — as much as you need.\n\nWhen you are done reasoning, end your reply with a final block in exactly this format, with nothing after it:\n\nFINAL:\nNAME: <full name or UNKNOWN>\nID: <ID number or Maisha Namba digits, or UNKNOWN>\n\nIf you are not sure of a character, write UNKNOWN for that field instead of guessing. Everything before "FINAL:" is your private reasoning and will not be shown to the user — only the FINAL block matters.';
+const PROMPT = 'Extract the name and ID number from this Kenyan national ID card or Maisha Card.\n\nEnd with exactly this block, nothing after it:\n\nFINAL:\nNAME: <full name or UNKNOWN>\nID: <ID number or UNKNOWN>';
 
 async function readOnce(b64) {
   try {
