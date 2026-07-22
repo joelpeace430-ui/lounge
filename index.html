@@ -394,7 +394,7 @@ body.dark .td-id{color:#e2e8f0;}
 
 /* ── CALENDAR ── */
 .cal-dow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);text-align:center;padding:8px 0;}
-.cal-day{aspect-ratio:1;border-radius:11px;border:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .18s var(--ease-spring);gap:3px;min-width:0;}
+.cal-day{aspect-ratio:1;border-radius:11px;border:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .18s var(--ease-spring);gap:3px;min-width:0;overflow:hidden;}
 .cal-day:hover{border-color:var(--ink3);background:var(--surface2);transform:translateY(-1px);box-shadow:var(--shadow-xs);}
 .cal-day.empty{visibility:hidden;}
 .cal-day.today{border-color:var(--green);box-shadow:0 0 0 1px var(--green);}
@@ -409,6 +409,7 @@ body.dark .td-id{color:#e2e8f0;}
 .cal-day-count{font-size:9px;font-weight:700;color:var(--green);background:var(--green-bg);border-radius:8px;padding:1px 6px;letter-spacing:.03em;}
 .cal-day-count.empty-count{visibility:hidden;}
 .cal-day-rev{font-size:8.5px;font-weight:600;color:var(--ink3);font-family:var(--mono);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.cal-day-rev.empty-rev{visibility:hidden;}
 .cal-day.selected .cal-day-rev{color:rgba(0,0,0,.6);}
 .cal-list-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);}
 .cal-list-item:last-child{border-bottom:none;}
@@ -3239,7 +3240,7 @@ function renderCalendar(){
     html+=`<div class="cal-day ${isToday?'today':''} ${isSelected?'selected':''} ${hasDebt?'has-debt':''}" onclick="calSelectDay(${y},${m},${d})" title="${titleParts.join(' \u2014 ')}">
       <div class="cal-day-num">${d}</div>
       <div class="cal-day-count ${count===0?'empty-count':''}">${count}</div>
-      ${dayRevenue>0?`<div class="cal-day-rev">${fmtPrice(dayRevenue)}</div>`:''}
+      <div class="cal-day-rev ${dayRevenue>0?'':'empty-rev'}">${dayRevenue>0?fmtPrice(dayRevenue):'—'}</div>
     </div>`;
   }
   grid.innerHTML=html;
