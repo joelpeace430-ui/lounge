@@ -42,7 +42,7 @@ async function readOnce(b64) {
     const finalText = finalBlocks.length ? finalBlocks[finalBlocks.length - 1][1] : txt;
 
     const nm = finalText.match(/NAME:\s*(.+)/i);
-    const id = finalText.match(/ID:\s*(\d{7,9})/i); 
+    const id = finalText.match(/ID:\s*(\d{6,})/i); 
 
     // FIX: Extract index [1] from regex array result safely
     return {
