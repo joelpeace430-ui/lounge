@@ -1,27 +1,4 @@
-<!--
-  ═══════════════════════════════════════════════════════════════════════════
-  LOUNGE MANAGER — main app (frontend)
-  ═══════════════════════════════════════════════════════════════════════════
-  This file: everything the customer/staff/owner SEE and interact with —
-  the UI, the camera scanner, sign in/out, sessions, calendar, settings.
 
-  This app has ONE companion file it depends on:
-    → api/mpesa.js  — handles M-Pesa payments (STK push + Safaricom's callback)
-
-  That file MUST stay separate. Two reasons, not a style choice:
-    1. Vercel only turns files inside an "api/" folder into live server
-       addresses. If mpesa.js weren't its own file there, it would just be
-       inert text — Safaricom would have nowhere to send payment confirmations.
-    2. That file holds SECRET keys (M-Pesa + Supabase credentials). This HTML
-       file is sent in full to every visitor's browser (viewable via "View
-       Source") — secrets can never live here.
-
-  Deploy both files together, keeping this exact folder structure:
-    /index.html   (this file)
-    /api/mpesa.js
-    /package.json
-  ═══════════════════════════════════════════════════════════════════════════
--->
 <!DOCTYPE html>
 <html lang="en">
 <head>
