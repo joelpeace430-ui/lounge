@@ -1,33 +1,7 @@
-// ═══════════════════════════════════════════════════════════════════════════
-// LOUNGE MANAGER — M-Pesa settings backend
-// ═══════════════════════════════════════════════════════════════════════════
-// Handles saving and checking an owner's M-Pesa configuration:
-//   POST /api/mpesa-settings?action=save    → encrypts + stores production credentials
-//   POST /api/mpesa-settings?action=status  → tells the browser WHETHER production
-//                                               credentials are set, never WHAT they are
-//
-// SANDBOX is intentionally invisible here — it doesn't touch this file at all.
-// An owner on Sandbox uses YOUR OWN server-side Daraja test credentials
-// automatically (handled entirely inside api/mpesa.js using env vars), so
-// there's nothing for them to see, set, or save. Only switching to Production
-// brings this endpoint into play, and only then does the owner type in their
-// own real credentials.
-//
-// Required environment variables (Vercel → Project → Settings → Environment Variables):
-//   SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY  — same as mpesa.js
-//   MPESA_ENCRYPTION_KEY                                        — a 32-byte key, base64-encoded.
-//     Generate one with: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
-//     Must be the SAME value used in api/mpesa.js — set once, never change it.
-// ═══════════════════════════════════════════════════════════════════════════
+
 
 import crypto from 'crypto';
-
-// Encrypts with AES-256-GCM before storing. Deliberately inlined here (not
-// imported from a shared /lib file) — Vercel's per-function bundler doesn't
-// reliably trace relative imports reaching outside a function's own folder in
-// a plain (no build step) project, which caused "Cannot find module" crashes
-// in production. Duplicating ~15 lines is a much smaller cost than an entire
-// endpoint going down. Keep this in sync with the matching copy in api/mpesa.js.
+.
 function encrypt(plaintext) {
   if (!plaintext) return '';
   const key = Buffer.from(process.env.MPESA_ENCRYPTION_KEY || '', 'base64');
@@ -77,20 +51,13 @@ async function handleSave(req, res) {
     const payload = { id: ownerId, name: name || 'Owner', mpesa_env: env === 'production' ? 'production' : 'sandbox' };
 
     if (env === 'production') {
-      // real credentials — encrypted before they ever touch the database.
-      // IMPORTANT: only set a column if the client actually sent that field.
-      // The frontend omits consumerKey/consumerSecret/passkey entirely when
-      // they're still masked/collapsed (owner didn't click "Change credentials")
-      // — if we defaulted those to '' here, just changing the Till number would
-      // silently wipe out already-saved credentials. Only overwrite what was
-      // actually sent.
+     
       payload.mpesa_shortcode = shortcode || '';
       if (consumerKey !== undefined) payload.mpesa_consumer_key = consumerKey ? encrypt(consumerKey) : '';
       if (consumerSecret !== undefined) payload.mpesa_consumer_secret = consumerSecret ? encrypt(consumerSecret) : '';
       if (passkey !== undefined) payload.mpesa_passkey = passkey ? encrypt(passkey) : '';
     } else {
-      // switching back to sandbox — clear out any stored production credentials
-      // rather than leaving stale encrypted values sitting around unused
+     
       payload.mpesa_shortcode = '';
       payload.mpesa_consumer_key = '';
       payload.mpesa_consumer_secret = '';
