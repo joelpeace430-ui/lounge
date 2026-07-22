@@ -1,34 +1,3 @@
-// ═══════════════════════════════════════════════════════════════════════════
-// LOUNGE MANAGER — scheduled daily finalize (Vercel Cron)
-// ═══════════════════════════════════════════════════════════════════════════
-// Runs automatically once a day, scheduled for 21:00 UTC — that's midnight in
-// Nairobi (EAT, UTC+3, no daylight saving so this offset never changes). This
-// exists so a lounge's daily total gets locked in — and sessions get cleared
-// if the owner has Auto-clear turned on — even when nobody has the app open
-// right at midnight. The in-browser version (checkDailyRollover in
-// index.html) does the exact same job whenever the app happens to be open;
-// this is the backstop for whenever it isn't.
-//
-// IDEMPOTENT: if a day's daily_totals row already exists (e.g. the browser
-// already finalized it before this ran), that owner is skipped entirely for
-// that day — this avoids ever recomputing 0 revenue from sessions that were
-// already cleared by an earlier finalize.
-//
-// SECURITY: Vercel automatically sends `Authorization: Bearer <CRON_SECRET>`
-// on cron-triggered requests when CRON_SECRET is set as an env var. This
-// handler checks that header so nobody else can trigger it just by hitting
-// the URL directly.
-//
-// Deploy alongside your other api/ files. Scheduled via vercel.json's
-// "crons" entry — see that file for the schedule itself.
-//
-// Required environment variables (Vercel → Project → Settings → Environment Variables):
-//   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY  — same as your other api files
-//   CRON_SECRET                              — any random string you choose;
-//     generate one with: node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"
-//     Vercel automatically sends it on cron-triggered requests once it's set
-//     as an env var — you don't configure it anywhere else.
-// ═══════════════════════════════════════════════════════════════════════════
 
 async function sbFetch(path, opts = {}) {
   const headers = {
