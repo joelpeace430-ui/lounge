@@ -462,7 +462,8 @@ body.dark .td-id{color:#e2e8f0;}
   .home-stat{flex:1;min-width:90px;}
   .content{padding:10px;}
   .thead-bar{padding:10px 12px;}
-  .cal-grid-wrap{padding:4px!important;}
+  .cal-grid-wrap{padding:4px!important;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  #cal-grid{grid-template-columns:repeat(7,minmax(46px,1fr))!important;gap:3px!important;}
 
   /* bigger, thumb-friendly touch targets everywhere */
   .sb-btn,.btn-si,.btn-cl,.theme-btn{min-height:40px;}
@@ -536,7 +537,6 @@ body.dark .td-id{color:#e2e8f0;}
   .cal-day-num{font-size:15px;}
   .cal-day-count{font-size:10px;padding:2px 6px;}
   .cal-dow{font-size:10px;padding:6px 0;}
-  #cal-grid{gap:3px!important;}
 }
 
 /* toggle switch */
