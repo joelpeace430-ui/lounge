@@ -2,7 +2,7 @@
 // LOUNGE MANAGER — ID card reading backend (Production Hotfix)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const PROMPT = 'This is a Kenyan national ID card or Maisha Card. Read the full name and the ID number (or Maisha Namba) exactly as printed. If you are not sure of a character, write UNKNOWN for that field instead of guessing.\n\nReply ONLY in this exact format:\nNAME: <name or UNKNOWN>\nID: <digits or UNKNOWN>';
+const PROMPT = 'This is a Kenyan national ID card or Maisha Card. You may reason through what you see first — think about the layout, the printed labels, anything unclear — as much as you need.\n\nWhen you are done reasoning, end your reply with a final block in exactly this format, with nothing after it:\n\nFINAL:\nNAME: <full name or UNKNOWN>\nID: <ID number or Maisha Namba digits, or UNKNOWN>\n\nIf you are not sure of a character, write UNKNOWN for that field instead of guessing. Everything before "FINAL:" is your private reasoning and will not be shown to the user — only the FINAL block matters.';
 
 async function readOnce(b64) {
   try {
@@ -14,7 +14,7 @@ async function readOnce(b64) {
       },
       body: JSON.stringify({
         model: 'qwen/qwen3.6-27b',
-        max_tokens: 60,
+        max_tokens: 400,
         temperature: 0,
         messages: [{ 
           role: 'user', 
@@ -35,9 +35,14 @@ async function readOnce(b64) {
     const data = await res.json();
     // FIX: Added back the correct choices[0] array index position
     const txt = data.choices && data.choices[0] && data.choices[0].message ? data.choices[0].message.content : '';
-    
-    const nm = txt.match(/NAME:\s*(.+)/i);
-    const id = txt.match(/ID:\s*(\d{7,9})/i); 
+
+    // Only look inside the LAST "FINAL:" block — everything the model
+    // reasoned through before that is discarded and never parsed.
+    const finalBlocks = [...txt.matchAll(/FINAL:\s*([\s\S]*?)(?=\n*FINAL:|$)/gi)];
+    const finalText = finalBlocks.length ? finalBlocks[finalBlocks.length - 1][1] : txt;
+
+    const nm = finalText.match(/NAME:\s*(.+)/i);
+    const id = finalText.match(/ID:\s*(\d{7,9})/i); 
 
     // FIX: Extract index [1] from regex array result safely
     return {
