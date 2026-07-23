@@ -1,3 +1,27 @@
+<!--
+  ═══════════════════════════════════════════════════════════════════════════
+  LOUNGE MANAGER — main app (frontend)
+  ═══════════════════════════════════════════════════════════════════════════
+  This file: everything the customer/staff/owner SEE and interact with —
+  the UI, the camera scanner, sign in/out, sessions, calendar, settings.
+
+  This app has ONE companion file it depends on:
+    → api/mpesa.js  — handles M-Pesa payments (STK push + Safaricom's callback)
+
+  That file MUST stay separate. Two reasons, not a style choice:
+    1. Vercel only turns files inside an "api/" folder into live server
+       addresses. If mpesa.js weren't its own file there, it would just be
+       inert text — Safaricom would have nowhere to send payment confirmations.
+    2. That file holds SECRET keys (M-Pesa + Supabase credentials). This HTML
+       file is sent in full to every visitor's browser (viewable via "View
+       Source") — secrets can never live here.
+
+  Deploy both files together, keeping this exact folder structure:
+    /index.html   (this file)
+    /api/mpesa.js
+    /package.json
+  ═══════════════════════════════════════════════════════════════════════════
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -85,11 +109,12 @@ body.light .sb-item.on{background:var(--green-bg);color:var(--green-dim);border:
 body.light .intake-field input{background:#ffffff;border-color:var(--line2);}
 body.light .intake-field input:focus{border-color:var(--green);box-shadow:0 0 0 4px var(--green-bg);}
 
+/* smooth theme transition */
 body,body *{transition:background-color .25s var(--ease),border-color .25s var(--ease),color .25s var(--ease);}
 body *{transition:none;}
 body{transition:background-color .25s var(--ease);}
 
-
+/* theme toggle button */
 .theme-btn{background:var(--surface2);border:1px solid var(--line);color:var(--ink2);padding:8px 11px;border-radius:10px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s var(--ease);}
 .theme-btn:hover{background:var(--surface3);color:var(--ink);transform:translateY(-1px);}
 .theme-btn:active{transform:translateY(0) scale(.94);}
@@ -100,7 +125,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:10px;border:2px solid transparent;background-clip:content-box;}
 ::-webkit-scrollbar-thumb:hover{background:var(--ink3);background-clip:content-box;}
 
-
+/* ── AUTH (keep existing premium auth intact) ── */
 .auth-wrap{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;background:#0d0d0d;}
 .auth-left{position:relative;background:linear-gradient(135deg,#0d1f13 0%,#0d2b1a 40%,#0a1a2e 100%);display:flex;flex-direction:column;justify-content:space-between;padding:40px;overflow:hidden;}
 .auth-left-noise{position:absolute;inset:0;pointer-events:none;z-index:1;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");}
@@ -146,10 +171,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 @media(max-width:768px){.auth-wrap{grid-template-columns:1fr;}.auth-left{display:none;}.auth-right{padding:24px;background:#f5f5f7;}.auth-box{background:#fff;border-radius:20px;padding:2.25rem 1.75rem;box-shadow:var(--shadow-xl);}}
 @media(max-width:480px){.auth-right{padding:20px 16px;align-items:flex-start;padding-top:40px;}}
 
-
+/* ── SHELL ── */
 .shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh;}
 
-
+/* ── SIDEBAR ── */
 .sb{background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6);border-right:1px solid var(--line);display:flex;flex-direction:column;height:100vh;position:sticky;top:0;min-width:0;}
 
 .sb-brand{padding:22px 18px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;}
@@ -175,7 +200,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .sb-item.on i{opacity:1;color:var(--green-dim);}
 .sb-badge{margin-left:auto;background:var(--green);border:none;border-radius:20px;padding:1.5px 7px;font-size:10px;font-weight:700;color:#fff;}
 
-
+/* scanner in sidebar */
 .strip-section{padding:0 10px 12px;border-top:1px solid var(--line);margin-top:4px;}
 .strip-section-label{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);padding:12px 0 8px;display:flex;align-items:center;justify-content:space-between;}
 .strip{position:relative;width:100%;height:42px;background:var(--bg);border-radius:8px;overflow:hidden;border:1px solid var(--line);margin-bottom:6px;}
@@ -203,12 +228,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .sb-grn:hover{background:rgba(34,197,94,.14);}
 .sb-btn:disabled{opacity:.3;cursor:default;}
 
-
+/* mobile nav drawer — invisible wrapper on desktop (display:contents keeps
+   existing desktop layout pixel-identical), collapsible panel on mobile */
 .sb-drawer{display:contents;}
 
 .main{display:flex;flex-direction:column;background:var(--bg);min-width:0;}
 
-
+/* ── TOPBAR ── */
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;background:color-mix(in srgb,var(--surface) 78%,transparent);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10;gap:16px;}
 .topbar-left{flex:1;}
 .topbar-breadcrumb{font-size:10px;color:var(--ink3);display:flex;align-items:center;gap:5px;margin-bottom:3px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;}
@@ -217,6 +243,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .topbar-right{display:flex;align-items:center;gap:10px;}
 .stats-row{display:flex;gap:8px;}
 
+/* stat cards */
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 15px;display:flex;align-items:center;gap:11px;box-shadow:var(--shadow-xs);transition:transform .2s var(--ease-spring),box-shadow .2s var(--ease);}
 .stat:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm);}
 .stat-icon{width:33px;height:33px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -236,6 +263,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .view{display:none;} .view.on{display:block;animation:viewIn .35s var(--ease-spring);}
 @keyframes viewIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
+/* ── SCAN BANNER ── */
 .mode-banner{display:flex;align-items:center;gap:14px;padding:15px 19px;border-radius:var(--r);margin-bottom:22px;border:1px solid transparent;position:relative;overflow:hidden;box-shadow:var(--shadow-xs);}
 .mode-banner.scanning{background:linear-gradient(135deg,var(--amber-bg),color-mix(in srgb,var(--amber-bg) 60%,var(--surface)));border-color:var(--amber-border);}
 .mode-banner.signin{background:linear-gradient(135deg,var(--green-bg),color-mix(in srgb,var(--green-bg) 60%,var(--surface)));border-color:var(--green-border);}
@@ -255,9 +283,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .mode-banner.signin .mode-pulse{color:var(--green);}
 .mode-banner.signout .mode-pulse{color:var(--purple);}
 
-
+/* ── LAYOUT GRID ── */
 .dash-grid{display:grid;grid-template-columns:360px 1fr;gap:20px;align-items:start;}
 
+/* ── CARDS ── */
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm);transition:box-shadow .25s var(--ease);}
 .panel-head{display:flex;align-items:center;justify-content:space-between;padding:17px 19px;border-bottom:1px solid var(--line);}
 .panel-head-left{display:flex;align-items:center;gap:11px;}
@@ -267,7 +296,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .panel-sub{font-size:11px;color:var(--ink3);margin-top:2px;}
 .panel-body{padding:19px;}
 
-
+/* captured card row */
 .cap-row{display:flex;align-items:center;gap:11px;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:14px;}
 .cap-thumb{width:68px;height:44px;object-fit:cover;border-radius:8px;border:1px solid var(--line2);flex-shrink:0;}
 .cap-label{font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px;}
@@ -275,6 +304,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .cap-check{margin-left:auto;color:var(--green);font-size:20px;}
 .scan-reading{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;background:var(--purple-bg);color:var(--purple);margin-bottom:12px;border:1px solid var(--purple-border);}
 
+/* form fields */
 .fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
 .fg label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.09em;}
 .fg input{padding:11px 13px;border:1px solid var(--line2);border-radius:var(--r-sm);font-size:13px;font-family:var(--sans);color:var(--ink);background:var(--surface2);outline:none;transition:border .18s var(--ease),box-shadow .18s var(--ease);width:100%;}
@@ -298,7 +328,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .reset-mode-btn.active{background:var(--green-bg);border-color:var(--green-border);color:var(--green-dim);box-shadow:0 1px 4px rgba(48,179,85,.15);}
 .reset-mode-btn:hover:not(.active){border-color:var(--ink3);color:var(--ink);transform:translateY(-1px);}
 
-
+/* ── ACTIVE SESSION CARDS ── */
 .session-cards{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
 .sess-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:15px 17px;display:flex;align-items:center;gap:14px;transition:all .2s var(--ease);box-shadow:var(--shadow-xs);}
 .sess-card:hover{box-shadow:var(--shadow-sm);transform:translateY(-1px);}
@@ -318,7 +348,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .sess-timelabel{font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-top:3px;}
 .sess-card.overtime .sess-timelabel{color:var(--red);}
 
-
+/* ── HISTORY TABLE ── */
 .tpanel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm);}
 .thead-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;row-gap:10px;padding:15px 19px;border-bottom:1px solid var(--line);}
 .thead-left{flex-shrink:0;}
@@ -364,7 +394,7 @@ body.dark .td-id{color:#e2e8f0;}
 
 /* ── CALENDAR ── */
 .cal-dow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);text-align:center;padding:8px 0;}
-.cal-day{aspect-ratio:1;border-radius:11px;border:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .18s var(--ease-spring);gap:3px;min-width:0;overflow:hidden;}
+.cal-day{aspect-ratio:1;border-radius:11px;border:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .18s var(--ease-spring);gap:3px;}
 .cal-day:hover{border-color:var(--ink3);background:var(--surface2);transform:translateY(-1px);box-shadow:var(--shadow-xs);}
 .cal-day.empty{visibility:hidden;}
 .cal-day.today{border-color:var(--green);box-shadow:0 0 0 1px var(--green);}
@@ -379,7 +409,6 @@ body.dark .td-id{color:#e2e8f0;}
 .cal-day-count{font-size:9px;font-weight:700;color:var(--green);background:var(--green-bg);border-radius:8px;padding:1px 6px;letter-spacing:.03em;}
 .cal-day-count.empty-count{visibility:hidden;}
 .cal-day-rev{font-size:8.5px;font-weight:600;color:var(--ink3);font-family:var(--mono);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
-.cal-day-rev.empty-rev{visibility:hidden;}
 .cal-day.selected .cal-day-rev{color:rgba(0,0,0,.6);}
 .cal-list-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);}
 .cal-list-item:last-child{border-bottom:none;}
@@ -387,10 +416,10 @@ body.dark .td-id{color:#e2e8f0;}
 .cal-list-name{font-size:13px;font-weight:500;color:var(--ink);}
 .cal-list-meta{font-size:11px;color:var(--ink3);margin-top:2px;line-height:1.5;}
 
-
+/* ── SETTINGS PANEL ── */
 .panel .fg input{background:var(--surface2);}
 
-
+/* ── MOBILE/TABLET HAMBURGER + VERTICAL DROPDOWN NAV (hidden on desktop) ── */
 .mnav-toggle{display:none;}
 .mnav-dropdown{display:none;}
 .mnav-scrim{display:none;}
@@ -398,9 +427,14 @@ body.dark .td-id{color:#e2e8f0;}
 @media(max-width:900px){
   .shell{grid-template-columns:1fr;padding-top:60px;}
 
+  /* Turn off the backdrop-filter blur on mobile — a heavy blur recalculated every
+     scroll frame on a fixed/sticky element is the classic cause of scroll lag on
+     phone GPUs. Desktop keeps the blur (not fixed there, no scroll cost). Solid
+     background looks almost identical, costs the GPU basically nothing. */
   .sb{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none;}
   .topbar{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none;}
 
+  /* sidebar becomes just a camera-scanner strip, shown only on Sign in */
   .sb{height:auto;position:relative;display:block;min-width:0;}
   .sb-brand,.sb-owner,.sb-nav>.sb-sec,.sb-item,.sb-hamburger{display:none;}
   .sb-nav{padding:0;border:none;}
@@ -409,7 +443,9 @@ body.dark .td-id{color:#e2e8f0;}
   .strip{height:200px;}
   .strip video{height:100%;top:0;left:0;transform:none;}
 
-  
+  /* minimal top header — fixed to the actual top of the screen (not just
+     "first in flow"), so the hamburger + its dropdown always anchor correctly
+     no matter what's below them (camera scanner, long tables, etc.) */
   .topbar{padding:12px 16px;gap:10px;position:fixed;top:0;left:0;right:0;z-index:72;}
   .topbar-left{display:flex;align-items:center;gap:10px;}
   .topbar-breadcrumb{display:none;}
@@ -423,16 +459,15 @@ body.dark .td-id{color:#e2e8f0;}
   .home-top{grid-template-columns:1fr;}
   .home-stats{flex-direction:row;flex-wrap:wrap;}
   .home-stat{flex:1;min-width:90px;}
-  .content{padding:10px;}
-  .thead-bar{padding:10px 12px;}
-  .cal-grid-wrap{padding:4px!important;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  #cal-grid{grid-template-columns:repeat(7,minmax(46px,1fr))!important;gap:3px!important;}
+  .content{padding:14px;}
+  .thead-bar{padding:12px 14px;}
+  .cal-grid-wrap{padding:10px!important;}
 
-
+  /* bigger, thumb-friendly touch targets everywhere */
   .sb-btn,.btn-si,.btn-cl,.theme-btn{min-height:40px;}
-  input,select{font-size:16px!important;} 
+  input,select{font-size:16px!important;} /* prevents iOS auto-zoom on focus */
 
-
+  /* ── hamburger-triggered vertical dropdown menu ── */
   .mnav-dropdown{
     display:flex;flex-direction:column;
     position:fixed;top:60px;left:12px;right:12px;z-index:71;
@@ -497,9 +532,9 @@ body.dark .td-id{color:#e2e8f0;}
   .duration-row{grid-template-columns:1fr;}
   .form-actions{flex-wrap:wrap;}
   .form-actions .btn-si,.form-actions .btn-cl{flex:1;justify-content:center;}
-  .cal-day-num{font-size:15px;}
-  .cal-day-count{font-size:10px;padding:2px 6px;}
-  .cal-dow{font-size:10px;padding:6px 0;}
+  .cal-day-num{font-size:11px;}
+  .cal-day-count{font-size:8px;padding:1px 4px;}
+  .cal-dow{font-size:9px;padding:6px 0;}
 }
 
 /* toggle switch */
@@ -555,6 +590,7 @@ body.dark{
 
 .home-body{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start;}
 
+/* intake form */
 .intake-col{}
 .intake-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm);}
 .intake-header{display:flex;align-items:center;justify-content:space-between;padding:15px 17px;border-bottom:1px solid var(--line);}
@@ -1333,7 +1369,7 @@ body.dark{
             <span id="cal-month-revenue" style="font-size:15px;font-weight:700;color:var(--green);font-family:var(--mono);">KSh 0</span>
           </div>
           <div class="cal-grid-wrap" style="padding:18px;">
-            <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;min-width:0;"></div>
+            <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;"></div>
           </div>
         </div>
         <div class="tpanel">
@@ -2314,40 +2350,8 @@ function setBanner(cls,msg){
 
 // ── main scanner (always on) ──────────────────────────────────────────────────
 async function startMainScanner(){
-  // Not every camera failure is a permission denial — a device with no rear
-  // ("environment") camera, a browser that treats facingMode as a hard
-  // constraint, the camera already being held open by another app/tab, or
-  // running on plain http (mediaDevices is undefined outside a secure
-  // context) all fail differently and need different fixes. Collapsing them
-  // all into one "Camera denied" message made every one of those look like
-  // the same problem, so there was nothing to go on to actually fix it.
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    console.error('Camera: navigator.mediaDevices unavailable — page must be served over https (or localhost)');
-    setPill('off','Camera unavailable — needs https');
-    return;
-  }
   try{
     mainStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
-  }catch(e){
-    console.warn('Camera: environment-facing request failed, retrying with plain video:true —',e.name,e.message);
-    // OverconstrainedError/NotReadableError here usually just means this
-    // device has no back camera to satisfy facingMode, or the strict
-    // width/height ideal couldn't be met — a plain request is far more
-    // likely to succeed than the more specific one. Only true permission/
-    // hardware failures should fall through to the catch below.
-    try{
-      mainStream=await navigator.mediaDevices.getUserMedia({video:true});
-    }catch(e2){
-      console.error('Camera: getUserMedia failed —',e2.name,e2.message);
-      const msg = e2.name==='NotAllowedError' ? 'Camera permission denied'
-        : e2.name==='NotFoundError' ? 'No camera found'
-        : e2.name==='NotReadableError' ? 'Camera in use by another app'
-        : 'Camera error — '+e2.name;
-      setPill('off',msg);
-      return;
-    }
-  }
-  try{
     const v=document.getElementById('main-vid');
     v.srcObject=mainStream;await v.play();
     setPill('signin','Ready — tap Take picture');
@@ -2355,8 +2359,33 @@ async function startMainScanner(){
     if(btn)btn.disabled=false;
     drawStrip(document.getElementById('main-ov'),'rgba(255,255,255,0.35)');
   }catch(e){
-    console.error('Camera: got a stream but video.play() failed —',e.name,e.message);
-    setPill('off','Camera error — could not play stream');
+    console.error('Camera error:', e.name, e.message);
+    let msg='Camera error';
+    if(e.name==='NotAllowedError'||e.name==='PermissionDeniedError'){
+      msg='Camera permission denied — check browser settings';
+    }else if(e.name==='NotFoundError'||e.name==='DevicesNotFoundError'){
+      msg='No camera found on this device';
+    }else if(e.name==='NotReadableError'||e.name==='TrackStartError'){
+      msg='Camera in use by another app';
+    }else if(e.name==='OverconstrainedError'){
+      msg='No rear camera — retrying front camera';
+      try{
+        mainStream=await navigator.mediaDevices.getUserMedia({video:true});
+        const v=document.getElementById('main-vid');
+        v.srcObject=mainStream;await v.play();
+        setPill('signin','Ready — tap Take picture');
+        const btn=document.getElementById('capture-btn');
+        if(btn)btn.disabled=false;
+        drawStrip(document.getElementById('main-ov'),'rgba(255,255,255,0.35)');
+        return;
+      }catch(e2){
+        console.error('Fallback camera error:', e2.name, e2.message);
+        msg='Camera unavailable';
+      }
+    }else if(location.protocol!=='https:'&&location.hostname!=='localhost'){
+      msg='Camera needs HTTPS';
+    }
+    setPill('off',msg);
   }
 }
 
@@ -3236,7 +3265,7 @@ function renderCalendar(){
     html+=`<div class="cal-day ${isToday?'today':''} ${isSelected?'selected':''} ${hasDebt?'has-debt':''}" onclick="calSelectDay(${y},${m},${d})" title="${titleParts.join(' \u2014 ')}">
       <div class="cal-day-num">${d}</div>
       <div class="cal-day-count ${count===0?'empty-count':''}">${count}</div>
-      <div class="cal-day-rev ${dayRevenue>0?'':'empty-rev'}">${dayRevenue>0?fmtPrice(dayRevenue):'—'}</div>
+      ${dayRevenue>0?`<div class="cal-day-rev">${fmtPrice(dayRevenue)}</div>`:''}
     </div>`;
   }
   grid.innerHTML=html;
