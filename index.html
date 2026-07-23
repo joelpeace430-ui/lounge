@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2315,8 +2314,40 @@ function setBanner(cls,msg){
 
 // ── main scanner (always on) ──────────────────────────────────────────────────
 async function startMainScanner(){
+  // Not every camera failure is a permission denial — a device with no rear
+  // ("environment") camera, a browser that treats facingMode as a hard
+  // constraint, the camera already being held open by another app/tab, or
+  // running on plain http (mediaDevices is undefined outside a secure
+  // context) all fail differently and need different fixes. Collapsing them
+  // all into one "Camera denied" message made every one of those look like
+  // the same problem, so there was nothing to go on to actually fix it.
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    console.error('Camera: navigator.mediaDevices unavailable — page must be served over https (or localhost)');
+    setPill('off','Camera unavailable — needs https');
+    return;
+  }
   try{
     mainStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
+  }catch(e){
+    console.warn('Camera: environment-facing request failed, retrying with plain video:true —',e.name,e.message);
+    // OverconstrainedError/NotReadableError here usually just means this
+    // device has no back camera to satisfy facingMode, or the strict
+    // width/height ideal couldn't be met — a plain request is far more
+    // likely to succeed than the more specific one. Only true permission/
+    // hardware failures should fall through to the catch below.
+    try{
+      mainStream=await navigator.mediaDevices.getUserMedia({video:true});
+    }catch(e2){
+      console.error('Camera: getUserMedia failed —',e2.name,e2.message);
+      const msg = e2.name==='NotAllowedError' ? 'Camera permission denied'
+        : e2.name==='NotFoundError' ? 'No camera found'
+        : e2.name==='NotReadableError' ? 'Camera in use by another app'
+        : 'Camera error — '+e2.name;
+      setPill('off',msg);
+      return;
+    }
+  }
+  try{
     const v=document.getElementById('main-vid');
     v.srcObject=mainStream;await v.play();
     setPill('signin','Ready — tap Take picture');
@@ -2324,7 +2355,8 @@ async function startMainScanner(){
     if(btn)btn.disabled=false;
     drawStrip(document.getElementById('main-ov'),'rgba(255,255,255,0.35)');
   }catch(e){
-    setPill('off','Camera denied');
+    console.error('Camera: got a stream but video.play() failed —',e.name,e.message);
+    setPill('off','Camera error — could not play stream');
   }
 }
 
