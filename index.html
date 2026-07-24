@@ -1,27 +1,3 @@
-<!--
-  ═══════════════════════════════════════════════════════════════════════════
-  LOUNGE MANAGER — main app (frontend)
-  ═══════════════════════════════════════════════════════════════════════════
-  This file: everything the customer/staff/owner SEE and interact with —
-  the UI, the camera scanner, sign in/out, sessions, calendar, settings.
-
-  This app has ONE companion file it depends on:
-    → api/mpesa.js  — handles M-Pesa payments (STK push + Safaricom's callback)
-
-  That file MUST stay separate. Two reasons, not a style choice:
-    1. Vercel only turns files inside an "api/" folder into live server
-       addresses. If mpesa.js weren't its own file there, it would just be
-       inert text — Safaricom would have nowhere to send payment confirmations.
-    2. That file holds SECRET keys (M-Pesa + Supabase credentials). This HTML
-       file is sent in full to every visitor's browser (viewable via "View
-       Source") — secrets can never live here.
-
-  Deploy both files together, keeping this exact folder structure:
-    /index.html   (this file)
-    /api/mpesa.js
-    /package.json
-  ═══════════════════════════════════════════════════════════════════════════
--->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -69,7 +45,6 @@
 }
 .stat-body .n,.home-stat-n,.live-card-timer,.td-timer,.td-num,#today-live-total,.cap-strip-id,.td-id{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;}
 
-/* ── LIGHT MODE ── */
 body.light{
   --bg:#f5f5f7;
   --surface:#ffffff;
@@ -109,12 +84,10 @@ body.light .sb-item.on{background:var(--green-bg);color:var(--green-dim);border:
 body.light .intake-field input{background:#ffffff;border-color:var(--line2);}
 body.light .intake-field input:focus{border-color:var(--green);box-shadow:0 0 0 4px var(--green-bg);}
 
-/* smooth theme transition */
 body,body *{transition:background-color .25s var(--ease),border-color .25s var(--ease),color .25s var(--ease);}
 body *{transition:none;}
 body{transition:background-color .25s var(--ease);}
 
-/* theme toggle button */
 .theme-btn{background:var(--surface2);border:1px solid var(--line);color:var(--ink2);padding:8px 11px;border-radius:10px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s var(--ease);}
 .theme-btn:hover{background:var(--surface3);color:var(--ink);transform:translateY(-1px);}
 .theme-btn:active{transform:translateY(0) scale(.94);}
@@ -125,7 +98,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:10px;border:2px solid transparent;background-clip:content-box;}
 ::-webkit-scrollbar-thumb:hover{background:var(--ink3);background-clip:content-box;}
 
-/* ── AUTH (keep existing premium auth intact) ── */
 .auth-wrap{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;background:#0d0d0d;}
 .auth-left{position:relative;background:linear-gradient(135deg,#0d1f13 0%,#0d2b1a 40%,#0a1a2e 100%);display:flex;flex-direction:column;justify-content:space-between;padding:40px;overflow:hidden;}
 .auth-left-noise{position:absolute;inset:0;pointer-events:none;z-index:1;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");}
@@ -171,10 +143,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 @media(max-width:768px){.auth-wrap{grid-template-columns:1fr;}.auth-left{display:none;}.auth-right{padding:24px;background:#f5f5f7;}.auth-box{background:#fff;border-radius:20px;padding:2.25rem 1.75rem;box-shadow:var(--shadow-xl);}}
 @media(max-width:480px){.auth-right{padding:20px 16px;align-items:flex-start;padding-top:40px;}}
 
-/* ── SHELL ── */
 .shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh;}
 
-/* ── SIDEBAR ── */
 .sb{background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6);border-right:1px solid var(--line);display:flex;flex-direction:column;height:100vh;position:sticky;top:0;min-width:0;}
 
 .sb-brand{padding:22px 18px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;}
@@ -200,7 +170,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .sb-item.on i{opacity:1;color:var(--green-dim);}
 .sb-badge{margin-left:auto;background:var(--green);border:none;border-radius:20px;padding:1.5px 7px;font-size:10px;font-weight:700;color:#fff;}
 
-/* scanner in sidebar */
 .strip-section{padding:0 10px 12px;border-top:1px solid var(--line);margin-top:4px;}
 .strip-section-label{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);padding:12px 0 8px;display:flex;align-items:center;justify-content:space-between;}
 .strip{position:relative;width:100%;height:42px;background:var(--bg);border-radius:8px;overflow:hidden;border:1px solid var(--line);margin-bottom:6px;}
@@ -228,13 +197,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .sb-grn:hover{background:rgba(34,197,94,.14);}
 .sb-btn:disabled{opacity:.3;cursor:default;}
 
-/* mobile nav drawer — invisible wrapper on desktop (display:contents keeps
-   existing desktop layout pixel-identical), collapsible panel on mobile */
 .sb-drawer{display:contents;}
 
 .main{display:flex;flex-direction:column;background:var(--bg);min-width:0;}
 
-/* ── TOPBAR ── */
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;background:color-mix(in srgb,var(--surface) 78%,transparent);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10;gap:16px;}
 .topbar-left{flex:1;}
 .topbar-breadcrumb{font-size:10px;color:var(--ink3);display:flex;align-items:center;gap:5px;margin-bottom:3px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;}
@@ -243,7 +209,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .topbar-right{display:flex;align-items:center;gap:10px;}
 .stats-row{display:flex;gap:8px;}
 
-/* stat cards */
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 15px;display:flex;align-items:center;gap:11px;box-shadow:var(--shadow-xs);transition:transform .2s var(--ease-spring),box-shadow .2s var(--ease);}
 .stat:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm);}
 .stat-icon{width:33px;height:33px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -263,7 +228,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .view{display:none;} .view.on{display:block;animation:viewIn .35s var(--ease-spring);}
 @keyframes viewIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-/* ── SCAN BANNER ── */
 .mode-banner{display:flex;align-items:center;gap:14px;padding:15px 19px;border-radius:var(--r);margin-bottom:22px;border:1px solid transparent;position:relative;overflow:hidden;box-shadow:var(--shadow-xs);}
 .mode-banner.scanning{background:linear-gradient(135deg,var(--amber-bg),color-mix(in srgb,var(--amber-bg) 60%,var(--surface)));border-color:var(--amber-border);}
 .mode-banner.signin{background:linear-gradient(135deg,var(--green-bg),color-mix(in srgb,var(--green-bg) 60%,var(--surface)));border-color:var(--green-border);}
@@ -283,10 +247,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .mode-banner.signin .mode-pulse{color:var(--green);}
 .mode-banner.signout .mode-pulse{color:var(--purple);}
 
-/* ── LAYOUT GRID ── */
 .dash-grid{display:grid;grid-template-columns:360px 1fr;gap:20px;align-items:start;}
 
-/* ── CARDS ── */
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm);transition:box-shadow .25s var(--ease);}
 .panel-head{display:flex;align-items:center;justify-content:space-between;padding:17px 19px;border-bottom:1px solid var(--line);}
 .panel-head-left{display:flex;align-items:center;gap:11px;}
@@ -296,7 +258,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .panel-sub{font-size:11px;color:var(--ink3);margin-top:2px;}
 .panel-body{padding:19px;}
 
-/* captured card row */
 .cap-row{display:flex;align-items:center;gap:11px;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:14px;}
 .cap-thumb{width:68px;height:44px;object-fit:cover;border-radius:8px;border:1px solid var(--line2);flex-shrink:0;}
 .cap-label{font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px;}
@@ -304,7 +265,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .cap-check{margin-left:auto;color:var(--green);font-size:20px;}
 .scan-reading{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:4px 11px;border-radius:20px;background:var(--purple-bg);color:var(--purple);margin-bottom:12px;border:1px solid var(--purple-border);}
 
-/* form fields */
 .fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
 .fg label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.09em;}
 .fg input{padding:11px 13px;border:1px solid var(--line2);border-radius:var(--r-sm);font-size:13px;font-family:var(--sans);color:var(--ink);background:var(--surface2);outline:none;transition:border .18s var(--ease),box-shadow .18s var(--ease);width:100%;}
@@ -328,7 +288,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .reset-mode-btn.active{background:var(--green-bg);border-color:var(--green-border);color:var(--green-dim);box-shadow:0 1px 4px rgba(48,179,85,.15);}
 .reset-mode-btn:hover:not(.active){border-color:var(--ink3);color:var(--ink);transform:translateY(-1px);}
 
-/* ── ACTIVE SESSION CARDS ── */
 .session-cards{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
 .sess-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:15px 17px;display:flex;align-items:center;gap:14px;transition:all .2s var(--ease);box-shadow:var(--shadow-xs);}
 .sess-card:hover{box-shadow:var(--shadow-sm);transform:translateY(-1px);}
@@ -348,7 +307,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .sess-timelabel{font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-top:3px;}
 .sess-card.overtime .sess-timelabel{color:var(--red);}
 
-/* ── HISTORY TABLE ── */
 .tpanel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm);}
 .thead-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;row-gap:10px;padding:15px 19px;border-bottom:1px solid var(--line);}
 .thead-left{flex-shrink:0;}
@@ -392,7 +350,6 @@ body.dark .td-id{color:#e2e8f0;}
 .empty-row td{text-align:center;padding:3.5rem 1rem;color:var(--ink3);font-size:13px;}
 .avatar{width:28px;height:28px;border-radius:50%;background:var(--surface2);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--ink3);flex-shrink:0;margin-right:8px;vertical-align:middle;}
 
-/* ── CALENDAR ── */
 .cal-dow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);text-align:center;padding:8px 0;}
 .cal-day{aspect-ratio:1;border-radius:11px;border:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .18s var(--ease-spring);gap:3px;}
 .cal-day:hover{border-color:var(--ink3);background:var(--surface2);transform:translateY(-1px);box-shadow:var(--shadow-xs);}
@@ -416,10 +373,8 @@ body.dark .td-id{color:#e2e8f0;}
 .cal-list-name{font-size:13px;font-weight:500;color:var(--ink);}
 .cal-list-meta{font-size:11px;color:var(--ink3);margin-top:2px;line-height:1.5;}
 
-/* ── SETTINGS PANEL ── */
 .panel .fg input{background:var(--surface2);}
 
-/* ── MOBILE/TABLET HAMBURGER + VERTICAL DROPDOWN NAV (hidden on desktop) ── */
 .mnav-toggle{display:none;}
 .mnav-dropdown{display:none;}
 .mnav-scrim{display:none;}
@@ -427,14 +382,9 @@ body.dark .td-id{color:#e2e8f0;}
 @media(max-width:900px){
   .shell{grid-template-columns:1fr;padding-top:60px;}
 
-  /* Turn off the backdrop-filter blur on mobile — a heavy blur recalculated every
-     scroll frame on a fixed/sticky element is the classic cause of scroll lag on
-     phone GPUs. Desktop keeps the blur (not fixed there, no scroll cost). Solid
-     background looks almost identical, costs the GPU basically nothing. */
   .sb{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none;}
   .topbar{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none;}
 
-  /* sidebar becomes just a camera-scanner strip, shown only on Sign in */
   .sb{height:auto;position:relative;display:block;min-width:0;}
   .sb-brand,.sb-owner,.sb-nav>.sb-sec,.sb-item,.sb-hamburger{display:none;}
   .sb-nav{padding:0;border:none;}
@@ -443,9 +393,6 @@ body.dark .td-id{color:#e2e8f0;}
   .strip{height:200px;}
   .strip video{height:100%;top:0;left:0;transform:none;}
 
-  /* minimal top header — fixed to the actual top of the screen (not just
-     "first in flow"), so the hamburger + its dropdown always anchor correctly
-     no matter what's below them (camera scanner, long tables, etc.) */
   .topbar{padding:12px 16px;gap:10px;position:fixed;top:0;left:0;right:0;z-index:72;}
   .topbar-left{display:flex;align-items:center;gap:10px;}
   .topbar-breadcrumb{display:none;}
@@ -463,11 +410,9 @@ body.dark .td-id{color:#e2e8f0;}
   .thead-bar{padding:12px 14px;}
   .cal-grid-wrap{padding:10px!important;}
 
-  /* bigger, thumb-friendly touch targets everywhere */
   .sb-btn,.btn-si,.btn-cl,.theme-btn{min-height:40px;}
-  input,select{font-size:16px!important;} /* prevents iOS auto-zoom on focus */
+  input,select{font-size:16px!important;}
 
-  /* ── hamburger-triggered vertical dropdown menu ── */
   .mnav-dropdown{
     display:flex;flex-direction:column;
     position:fixed;top:60px;left:12px;right:12px;z-index:71;
@@ -497,7 +442,6 @@ body.dark .td-id{color:#e2e8f0;}
   .mnav-scrim.open{opacity:1;pointer-events:auto;}
 }
 
-/* ── card-style tables on phone screens (no horizontal scrolling) ── */
 @media(max-width:680px){
   .table-scroll{overflow-x:visible;}
   .table-scroll table{min-width:0;width:100%;table-layout:auto;}
@@ -511,10 +455,9 @@ body.dark .td-id{color:#e2e8f0;}
   .table-scroll tbody td::before{content:attr(data-label);font-size:10px;font-weight:700;
     color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;text-align:left;flex-shrink:0;}
   .table-scroll tbody td[data-label=""]::before{display:none;}
-  .table-scroll tbody td.td-num{display:none;} /* row number redundant in card view */
-  .edit-hint{opacity:1;} /* no hover on touch — always show the edit affordance */
+  .table-scroll tbody td.td-num{display:none;}
+  .edit-hint{opacity:1;}
 }
-
 
 @media(max-width:480px){
   .content{padding:12px;}
@@ -537,7 +480,6 @@ body.dark .td-id{color:#e2e8f0;}
   .cal-dow{font-size:9px;padding:6px 0;}
 }
 
-/* toggle switch */
 .toggle-switch{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;}
 .toggle-switch input{opacity:0;width:0;height:0;}
 .toggle-slider{position:absolute;cursor:pointer;inset:0;background:var(--surface3);border:1px solid var(--line2);border-radius:24px;transition:.2s;}
@@ -545,7 +487,6 @@ body.dark .td-id{color:#e2e8f0;}
 .toggle-switch input:checked + .toggle-slider{background:var(--green);border-color:var(--green);}
 .toggle-switch input:checked + .toggle-slider:before{transform:translateX(20px);background:#000;}
 
-/* ── DARK / NIGHT MODE ── */
 body.dark{
   --bg:#000000;--surface:#1c1c1e;--surface2:#242426;--surface3:#2e2e30;
   --ink:#f5f5f7;--ink2:#aeaeb2;--ink3:#6e6e73;
@@ -564,7 +505,6 @@ body.dark{
 .theme-btn{background:var(--surface2);border:1px solid var(--line);color:var(--ink2);padding:7px 10px;border-radius:8px;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .theme-btn:hover{background:var(--surface3);color:var(--ink);}
 
-/* ── HOME LAYOUT ── */
 .home-top{display:grid;grid-template-columns:1fr auto;gap:16px;margin-bottom:20px;align-items:stretch;}
 .scan-status-card{display:flex;align-items:center;justify-content:space-between;padding:17px 21px;border-radius:var(--r);border:1px solid transparent;gap:14px;box-shadow:var(--shadow-xs);}
 .scan-status-card.scanning{background:linear-gradient(135deg,var(--amber-bg),color-mix(in srgb,var(--amber-bg) 50%,var(--surface)));border-color:var(--amber-border);}
@@ -590,7 +530,6 @@ body.dark{
 
 .home-body{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start;}
 
-/* intake form */
 .intake-col{}
 .intake-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-sm);}
 .intake-header{display:flex;align-items:center;justify-content:space-between;padding:15px 17px;border-bottom:1px solid var(--line);}
@@ -624,13 +563,11 @@ body.dark{
 .signin-ghost-btn{width:100%;padding:10px;background:transparent;color:var(--ink3);border:none;border-top:1px solid var(--line);font-size:12px;cursor:pointer;font-family:var(--sans);display:flex;align-items:center;justify-content:center;gap:6px;transition:color .15s var(--ease);}
 .signin-ghost-btn:hover{color:var(--ink);}
 
-/* live sessions grid */
 .live-col{}
 .live-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:11px;margin-bottom:20px;}
 .live-empty{grid-column:1/-1;text-align:center;padding:2rem 1rem;color:var(--ink3);display:flex;flex-direction:column;align-items:center;gap:8px;font-size:13px;}
 .live-empty i{font-size:28px;opacity:.3;}
 
-/* live card */
 .live-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:15px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden;box-shadow:var(--shadow-xs);transition:box-shadow .2s var(--ease),transform .2s var(--ease-spring);animation:cardBreathe 4s ease-in-out infinite;}
 @keyframes cardBreathe{0%,100%{box-shadow:var(--shadow-xs);}50%{box-shadow:var(--shadow-sm);}}
 .live-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);animation-play-state:paused;}
@@ -652,10 +589,6 @@ body.dark{
 .live-signout-btn{width:100%;padding:8px;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r-sm);color:var(--ink2);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);display:flex;align-items:center;justify-content:center;gap:5px;transition:all .16s var(--ease);}
 .live-signout-btn:hover{background:var(--red-bg);border-color:var(--red-border);color:var(--red);}
 
-/* recent mini list */
-
-
-/* ── PAYMENT MODAL (cash / M-Pesa) ── */
 .payment-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
 .payment-modal{background:var(--surface);border-radius:var(--r);padding:24px;width:100%;max-width:380px;box-shadow:var(--shadow-xl);border:1px solid var(--line);animation:pmPop .32s var(--ease-spring);}
 @keyframes pmPop{0%{opacity:0;transform:scale(.94) translateY(6px);}100%{opacity:1;transform:scale(1) translateY(0);}}
@@ -690,14 +623,6 @@ body.dark{
 .pm-waiting-spinner .sdot{width:14px;height:14px;background:var(--green);}
 .pm-waiting-text{text-align:center;font-size:13px;color:var(--ink2);margin-bottom:14px;line-height:1.6;}
 
-/* ═══════════════════════════════════════════════════════════════════════
-   HOME / LANDING PAGE — shown first, before sign-in. Dark theme matches
-   the auth screen exactly (#0d0d0d) so it reads as the same product, not
-   a bolted-on marketing page. Green = money/M-Pesa (already the app's own
-   meaning for it throughout); blue is new here, used only for "session/
-   live" moments — the two colors map to the app's two real concerns:
-   getting paid, and tracking time.
-   ═══════════════════════════════════════════════════════════════════════ */
 .lp{--lp-blue:#3aa0ff;--lp-blue-bg:rgba(58,160,255,.12);--lp-blue-border:rgba(58,160,255,.28);
   background:#0d0d0d;color:#f5f5f7;min-height:100vh;font-family:var(--sans);}
 .lp *{box-sizing:border-box;}
@@ -711,7 +636,6 @@ body.dark{
   transition:background .18s;}
 .lp-nav-signin:hover{background:rgba(255,255,255,.1);}
 
-/* hero */
 .lp-hero{display:grid;grid-template-columns:1.1fr 1fr;gap:56px;align-items:center;padding:60px 0 90px;}
 .lp-eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.09em;
   text-transform:uppercase;color:#32d74b;background:rgba(50,215,75,.12);border:1px solid rgba(50,215,75,.25);
@@ -729,7 +653,6 @@ body.dark{
   display:flex;align-items:center;gap:8px;transition:background .15s;}
 .lp-cta-secondary:hover{background:rgba(255,255,255,.06);}
 
-/* live demo card — the signature element */
 .lp-demo-wrap{position:relative;}
 .lp-demo-card{background:#16171a;border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:22px;
   box-shadow:0 24px 64px rgba(0,0,0,.5);}
@@ -752,7 +675,6 @@ body.dark{
   border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:#6e6e73;}
 .lp-demo-foot b{color:#32d74b;font-family:var(--mono);}
 
-/* problem section */
 .lp-section{padding:70px 0;}
 .lp-section-head{text-align:center;max-width:560px;margin:0 auto 44px;}
 .lp-kicker{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--lp-blue);margin-bottom:12px;}
@@ -765,7 +687,6 @@ body.dark{
 .lp-problem-card h3{font-size:15px;font-weight:700;margin:0 0 8px;color:#f5f5f7;}
 .lp-problem-card p{font-size:13px;color:#a3a3ab;line-height:1.6;margin:0;}
 
-/* feature mockups */
 .lp-feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
 .lp-feat-card{background:#16171a;border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden;}
 .lp-feat-mock{padding:18px;background:#1c1d21;border-bottom:1px solid rgba(255,255,255,.06);min-height:140px;}
@@ -779,7 +700,6 @@ body.dark{
 .lp-mock-cal div{aspect-ratio:1;border-radius:5px;background:#16171a;font-size:9px;display:flex;align-items:center;justify-content:center;color:#6e6e73;}
 .lp-mock-cal div.hit{background:rgba(255,69,58,.18);color:#ff453a;font-weight:700;box-shadow:0 0 0 1px rgba(255,69,58,.4);}
 
-/* whatsapp CTA band */
 .lp-wa-band{background:linear-gradient(135deg,rgba(50,215,75,.1),rgba(58,160,255,.08));border:1px solid rgba(50,215,75,.2);
   border-radius:20px;padding:40px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;}
 .lp-wa-band h3{font-size:20px;font-weight:800;margin:0 0 6px;letter-spacing:-.01em;}
@@ -789,7 +709,6 @@ body.dark{
   transition:transform .15s;}
 .lp-wa-btn:hover{transform:translateY(-1px);}
 
-/* faq */
 .lp-faq{max-width:680px;margin:0 auto;}
 .lp-faq-item{border-bottom:1px solid rgba(255,255,255,.09);}
 .lp-faq-q{width:100%;text-align:left;background:none;border:none;color:#f5f5f7;font-size:14.5px;font-weight:600;
@@ -816,7 +735,7 @@ body.dark{
 <div id="home-landing" class="lp">
   <div class="lp-inner">
     <nav class="lp-nav">
-      <div class="lp-logo"><span class="lp-logo-mark">🚲</span>RentManager</div>
+      <div class="lp-logo">RentManager</div>
       <button class="lp-nav-signin" onclick="showAuthFromLanding()">Sign in</button>
     </nav>
 
@@ -932,7 +851,7 @@ body.dark{
           <h3>Questions before you switch?</h3>
           <p>Chat with us directly on WhatsApp — real answers, no forms.</p>
         </div>
-        <!-- TODO: replace 254700000000 with your real WhatsApp number -->
+
         <a class="lp-wa-btn" href="https://wa.me/254700000000" target="_blank" rel="noopener"><i class="ti ti-brand-whatsapp" style="font-size:18px;"></i>Chat on WhatsApp</a>
       </div>
     </section>
@@ -960,7 +879,7 @@ body.dark{
 
     <footer class="lp-footer">
       <span>© <span id="lp-year"></span> RentManager</span>
-      <!-- TODO: replace 254700000000 with your real WhatsApp number -->
+
       <a href="https://wa.me/254700000000" target="_blank" rel="noopener" style="color:#6e6e73;text-decoration:none;">WhatsApp us</a>
     </footer>
   </div>
@@ -968,7 +887,6 @@ body.dark{
 
 <div id="auth-wrap" class="auth-wrap" style="display:none;">
 
-  <!-- LEFT PANEL -->
   <div class="auth-left">
     <canvas id="bike-canvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;"></canvas>
     <div class="auth-left-noise"></div>
@@ -992,10 +910,8 @@ body.dark{
     </div>
   </div>
 
-  <!-- RIGHT PANEL -->
   <div class="auth-right">
 
-    <!-- LOGIN -->
     <div id="auth-login" class="auth-box">
       <div class="auth-eyebrow">Lounge Manager</div>
       <div class="auth-title"><span id="typewriter"></span><span class="type-cursor">|</span></div>
@@ -1013,7 +929,6 @@ body.dark{
       <div class="auth-switch">Don't have an account? <a onclick="showSignup()">Create one free</a></div>
     </div>
 
-    <!-- SIGNUP -->
     <div id="auth-signup" class="auth-box" style="display:none;">
       <div class="auth-eyebrow">Get started free</div>
       <div class="auth-title">Create your account</div>
@@ -1040,7 +955,6 @@ body.dark{
 <div id="dashboard" style="display:none;">
 <div class="shell">
 
-<!-- SIDEBAR -->
 <aside class="sb">
   <div class="sb-brand">
     <div class="sb-logo">
@@ -1082,7 +996,7 @@ body.dark{
 
     <div class="strip-section">
     <div class="strip-section-label">Live scanner</div>
-      <!-- single strip, always on -->
+
       <div class="strip" id="strip-live">
         <video id="main-vid" autoplay playsinline muted></video>
         <canvas id="main-ov"></canvas>
@@ -1099,11 +1013,8 @@ body.dark{
   </div>
 </aside>
 
-
-<!-- MAIN -->
 <div class="main">
 
-  <!-- TOPBAR -->
   <div class="topbar">
     <div class="topbar-left">
       <button class="mnav-toggle" id="mnav-toggle" onclick="toggleMobileNavMenu()" aria-label="Menu"><i class="ti ti-menu-2"></i></button>
@@ -1130,7 +1041,6 @@ body.dark{
     </div>
   </div>
 
-  <!-- vertical dropdown nav — mobile & tablet only, opened via the hamburger above -->
   <div class="mnav-dropdown" id="mnav-dropdown">
     <button class="mnav-item on" id="mnav-signin" onclick="switchView('signin')">
       <i class="ti ti-user-plus"></i><span>Sign in</span>
@@ -1158,10 +1068,8 @@ body.dark{
 
   <div class="content">
 
-    <!-- SIGN IN VIEW -->
     <div id="view-signin" class="view on">
 
-      <!-- TOP ROW: scan status + quick stats -->
       <div class="home-top">
         <div class="scan-status-card scanning" id="mode-banner">
           <div class="scan-status-left">
@@ -1189,7 +1097,6 @@ body.dark{
         </div>
       </div>
 
-      <!-- BODY: form + live grid -->
       <div class="home-body">
 
         <div class="intake-col">
@@ -1270,7 +1177,6 @@ body.dark{
       </div>
     </div>
 
-    <!-- SESSIONS VIEW -->
     <div id="view-sessions" class="view">
 
       <div class="tpanel">
@@ -1310,9 +1216,6 @@ body.dark{
       </div>
     </div>
 
-    <!-- DEBT VIEW — its own category, reached from the menu. Survives the daily
-         auto-clear (their session is never deleted while they still owe money),
-         so this shows up exactly like a normal session card even after 24 hours. -->
     <div id="view-debt" class="view">
       <div class="tpanel">
         <div class="thead-bar">
@@ -1349,7 +1252,6 @@ body.dark{
       </div>
     </div>
 
-    <!-- CALENDAR VIEW -->
     <div id="view-calendar" class="view">
       <div class="dash-grid" style="grid-template-columns:1fr 320px;">
         <div class="tpanel">
@@ -1390,7 +1292,6 @@ body.dark{
     <div id="view-settings" class="view">
       <div class="settings-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:900px;">
 
-        <!-- Account (mirrors the sidebar owner row — the main way to log out on mobile) -->
         <div class="panel" style="grid-column:1/-1;">
           <div class="panel-head">
             <div class="panel-head-left">
@@ -1408,7 +1309,6 @@ body.dark{
           </div>
         </div>
 
-        <!-- Pricing -->
         <div class="panel">
           <div class="panel-head">
             <div class="panel-head-left">
@@ -1461,7 +1361,6 @@ body.dark{
           </div>
         </div>
 
-        <!-- M-Pesa -->
         <div class="panel">
           <div class="panel-head">
             <div class="panel-head-left">
@@ -1478,14 +1377,12 @@ body.dark{
               </select>
             </div>
 
-            <!-- SANDBOX: nothing to see or set — works automatically -->
             <div id="mpesa-sandbox-panel">
               <div style="padding:12px 14px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:9px;color:var(--green);font-size:12px;line-height:1.6;">
                 <i class="ti ti-check" style="margin-right:6px;"></i>Sandbox is ready to test — no setup needed. Payments won't move real money.
               </div>
             </div>
 
-            <!-- PRODUCTION: owner's own real credentials, entered manually, never shown again after saving -->
             <div id="mpesa-production-panel" style="display:none;">
               <p style="font-size:12px;color:var(--ink3);line-height:1.7;margin-bottom:14px;">
                 These are YOUR own Daraja credentials from Safaricom — encrypted before they're
@@ -1524,7 +1421,6 @@ body.dark{
           </div>
         </div>
 
-        <!-- Daily revenue & reset -->
         <div class="panel">
           <div class="panel-head">
             <div class="panel-head-left">
@@ -1567,7 +1463,6 @@ body.dark{
           </div>
         </div>
 
-        <!-- Voice announcements -->
         <div class="panel">
           <div class="panel-head">
             <div class="panel-head-left">
@@ -1589,7 +1484,6 @@ body.dark{
           </div>
         </div>
 
-        <!-- Camera settings -->
         <div class="panel">
           <div class="panel-head">
             <div class="panel-head-left">
@@ -1619,7 +1513,6 @@ body.dark{
           </div>
         </div>
 
-        <!-- Live simulation -->
         <div class="panel">
           <div class="panel-head">
             <div class="panel-head-left">
@@ -1661,7 +1554,6 @@ body.dark{
 </div>
 </div>
 
-<!-- PAYMENT MODAL — cash or M-Pesa, for both sign-out and settling a debt -->
 <div class="payment-modal-overlay" id="payment-modal" style="display:none;">
   <div class="payment-modal">
     <div class="pm-head">
@@ -1669,7 +1561,6 @@ body.dark{
       <button class="pm-close" onclick="closePaymentModal()"><i class="ti ti-x"></i></button>
     </div>
 
-    <!-- choice step -->
     <div id="pm-step-choice">
       <div class="pm-summary">
         <div class="pm-row" id="pm-visit-row"><span>This visit</span><span id="pm-visit-cost"></span></div>
@@ -1684,7 +1575,6 @@ body.dark{
       </button>
     </div>
 
-    <!-- cash step -->
     <div id="pm-step-cash" style="display:none;">
       <label class="pm-label">Amount received (KSh)</label>
       <input type="number" id="pm-cash-amount" class="pm-input" step="0.01" min="0"/>
@@ -1692,7 +1582,6 @@ body.dark{
       <button class="pm-back-btn" onclick="showPaymentStep('choice')">Back</button>
     </div>
 
-    <!-- mpesa step -->
     <div id="pm-step-mpesa" style="display:none;">
       <label class="pm-label">Customer's M-Pesa phone number</label>
       <input type="tel" id="pm-mpesa-phone" class="pm-input" placeholder="07XX XXX XXX"/>
@@ -1700,7 +1589,6 @@ body.dark{
       <button class="pm-back-btn" onclick="showPaymentStep('choice')">Back</button>
     </div>
 
-    <!-- confirm-large step — catches likely typos (e.g. an extra zero or two) -->
     <div id="pm-step-confirm-large" style="display:none;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
         <div style="width:44px;height:44px;border-radius:50%;background:var(--red-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -1717,7 +1605,6 @@ body.dark{
       <button class="pm-confirm-btn" style="background:var(--red);" onclick="proceedWithCashPayment(parseFloat(document.getElementById('pm-cash-amount').value))"><i class="ti ti-check"></i> Yes, this amount is correct</button>
     </div>
 
-    <!-- waiting step -->
     <div id="pm-step-waiting" style="display:none;">
       <div class="pm-waiting-spinner"><span class="sdot pulse"></span></div>
       <p class="pm-waiting-text" id="pm-waiting-text">Waiting for payment...</p>
@@ -1728,8 +1615,6 @@ body.dark{
   </div>
 </div>
 
-<!-- DEBT BLOCK MODAL — stops a customer with an outstanding balance from
-     signing in again unless the owner deliberately overrides it -->
 <div class="payment-modal-overlay" id="debt-block-modal" style="display:none;">
   <div class="payment-modal">
     <div class="pm-head">
@@ -1756,7 +1641,6 @@ body.dark{
   </div>
 </div>
 
-<!-- generic confirm/alert modal — replaces every native confirm()/alert() in the app -->
 <div class="payment-modal-overlay" id="generic-modal" style="display:none;">
   <div class="payment-modal">
     <div class="pm-head">
@@ -1775,19 +1659,15 @@ body.dark{
     <button class="pm-confirm-btn" id="gm-confirm-btn" onclick="closeGenericModal(true)">OK</button>
   </div>
 </div>
-</div><!-- /dashboard -->
+</div>
 
 <script>
-// ── SUPABASE ──────────────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://jblixvjhrjfsgfklvufk.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibGl4dmpocmpmc2dma2x2dWZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxOTc0ODUsImV4cCI6MjA5ODc3MzQ4NX0.QI8tSreTSArdXSRnABFaWprpgx-BdKxldcKCSWJHvBw';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUserId = null;
 let realtimeChannel = null;
 
-// local caches — kept in sync with Supabase so the many render functions
-// below can stay synchronous. Mutations write through to Supabase; sessions
-// and debts also get pushed to every other device via realtime.
 let profileCache = { rate:0, minCharge:0, round:'none', resetMode:'clear' };
 let customerDirectory = {};
 let dailyTotals = {};
@@ -1819,14 +1699,10 @@ async function loadAllData(displayName){
     sb.from('daily_totals').select('*').eq('owner_id',currentUserId),
   ]);
   if(profileErr){
-    // a real fetch error (network/RLS/etc) — do NOT touch profileCache, and definitely
-    // don't recreate the row, or we'd risk wiping out a rate that's actually saved fine.
     console.error('Could not load profile — pricing may show stale values until this is fixed:',profileErr.message);
   } else if(profile){
     profileCache = { rate: profile.rate_per_hour||0, minCharge: profile.min_charge||0, round: profile.round_mode||'none', resetMode: profile.reset_mode||'clear' };
   } else {
-    // genuinely no profile row yet (e.g. the signup trigger didn't run for this account) —
-    // create one now so saving pricing later actually has a row to write to.
     profileCache = { rate:0, minCharge:0, round:'none', resetMode:'clear' };
     const {error:createErr}=await sb.from('profiles').upsert({ id:currentUserId, name: displayName||'Owner', rate_per_hour:0, min_charge:0, round_mode:'none' });
     if(createErr) console.error('Could not create missing profile row:',createErr.message);
@@ -1870,7 +1746,6 @@ function subscribeRealtime(){
     .subscribe();
 }
 
-// ── PRICING ENGINE ────────────────────────────────────────────────────────────
 function getPricing(){
   return profileCache;
 }
@@ -1892,16 +1767,7 @@ function fmtPrice(amount){
   return'KSh '+amount.toLocaleString('en-KE',{minimumFractionDigits:amount%1===0?0:2,maximumFractionDigits:2});
 }
 
-// ── customer debt ledger ────────────────────────────────────────────────────
-// keyed by lowercased ID number. Positive = customer owes the lounge (underpaid).
-// Negative = credit in the customer's favor (overpaid). Persists across visits
-// (and across every device, via Supabase) so if they come back next week
-// still owing money, it shows up automatically.
 let debts={};
-// when each current debt first appeared — keyed the same way as debts (lowercased
-// idnum). Cleared the moment the debt is paid off. Synced via the debts.since
-// column in Supabase, so it's consistent across every device/till, not just
-// this browser.
 let debtSince={};
 function getDebt(idnum){
   if(!idnum)return 0;
@@ -1916,15 +1782,13 @@ async function setDebtFor(idnum,amount){
     delete debtSince[key];
     await sb.from('debts').delete().eq('owner_id',currentUserId).eq('idnum',key);
   }else{
-    const isNewDebt=!debts[key]; // wasn't already in debt — this is a fresh start date
+    const isNewDebt=!debts[key];
     debts[key]=rounded;
     const payload={owner_id:currentUserId,idnum:key,amount:rounded,updated_at:new Date().toISOString()};
     if(isNewDebt){
       const since=new Date().toISOString();
       debtSince[key]=Date.parse(since);
-      payload.since=since; // only included on a fresh debt — an upsert that omits
-                            // this column leaves the existing 'since' untouched,
-                            // so an ongoing debt's original date never resets
+      payload.since=since;
     }
     await sb.from('debts').upsert(payload);
   }
@@ -1972,10 +1836,6 @@ function loadPricingFields(){
   updatePriceExample();
 }
 
-// M-Pesa credentials: sandbox uses YOUR OWN server-side test credentials
-// automatically (nothing to load or show here). Production credentials are
-// per-owner, encrypted at rest — this only ever loads a STATUS (env, till
-// number, and whether each secret is set), never the actual secret values.
 async function loadMpesaFields(){
   const envI=document.getElementById('mpesa-env-input');
   try{
@@ -2028,8 +1888,6 @@ async function saveMpesaSettings(){
   };
   if(env==='production'){
     body.shortcode=document.getElementById('mpesa-shortcode-input').value.trim();
-    // only send credential fields if the owner actually typed something new —
-    // if they're still masked/collapsed, leave whatever's already saved alone
     const fieldsVisible=document.getElementById('mpesa-cred-fields').style.display!=='none';
     if(fieldsVisible){
       body.consumerKey=document.getElementById('mpesa-consumer-key-input').value.trim();
@@ -2048,11 +1906,10 @@ async function saveMpesaSettings(){
     showAlertModal('Could not save M-Pesa settings: '+(d.error||'unknown error'),{title:'Save failed',danger:true});
     return;
   }
-  await loadMpesaFields(); // refresh status so the masked "saved" state reflects reality
+  await loadMpesaFields();
   if(msg){msg.style.display='block';setTimeout(()=>msg.style.display='none',2000);}
 }
 
-// ── DAILY REVENUE TRACKING & RESET ───────────────────────────────────────────
 function dateKeyOf(ts){
   const d=new Date(ts);
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -2060,18 +1917,9 @@ function dateKeyOf(ts){
 function todayKey(){return dateKeyOf(Date.now());}
 function getDailyTotals(){return dailyTotals;}
 function getResetMode(){return profileCache.resetMode||'clear';}
-// whole-shilling rounding — a per-device display/billing preference, same pattern
-// as reset mode above. When on, every price calc rounds to the nearest whole
-// KSh instead of tracking cents.
 function getWholeShillings(){return localStorage.getItem('lm_whole_shillings')!=='0';}
 function setWholeShillings(on){localStorage.setItem('lm_whole_shillings',on?'1':'0');}
 
-// Revenue + customer count for sessions that STARTED on the given date — plus,
-// when asking about today specifically, any session that's still active right
-// now regardless of when it started. Without that second part, a session that
-// began before midnight and is still running would tick up its own Cost on the
-// Sign in page forever, but never count toward "today's total" here — the
-// money would look like it's not being added even though it genuinely is.
 function computeDayStats(dateKey){
   const daySessions=sessions.filter(s=>
     dateKeyOf(s.startTime)===dateKey ||
@@ -2093,9 +1941,6 @@ async function finalizeDay(dateKey){
   return stats;
 }
 
-// Called once a minute — detects when the calendar date has rolled over and, depending on
-// the owner's chosen mode, either clears that day's sessions or just leaves them in place.
-// Either way the day's total is locked into history first, so nothing is ever lost.
 async function checkDailyRollover(){
   const last=localStorage.getItem('lm_last_check_date');
   const today=todayKey();
@@ -2103,7 +1948,6 @@ async function checkDailyRollover(){
   if(last!==today){
     await finalizeDay(last);
     if(getResetMode()==='clear'){
-      // keep sessions for anyone who still owes money, and anyone still active (not signed out)
       const toClear=sessions.filter(s=>dateKeyOf(s.startTime)===last && s.signedOut && getDebt(s.idnum)<=0.01);
       const idsToDelete=toClear.map(s=>s.id);
       const clearIds=new Set(idsToDelete);
@@ -2191,7 +2035,6 @@ let captured=false,pendingFrames=null;
 let sessions=[],curView='signin';
 
 function drawStrip(canvas,color='rgba(255,255,255,0.4)'){canvas.width=canvas.offsetWidth;canvas.height=canvas.offsetHeight;const ctx=canvas.getContext('2d'),cy=canvas.height/2;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(canvas.width,cy);ctx.stroke();ctx.setLineDash([]);}
-// ── THEME ─────────────────────────────────────────────────────────────────────
 let isDark = localStorage.getItem('lm_theme') === 'dark';
 function applyTheme(){
   document.body.classList.toggle('dark', isDark);
@@ -2211,7 +2054,6 @@ function rejectSound(){
   try{
     const ac=new(window.AudioContext||window.webkitAudioContext)();
     const now=ac.currentTime;
-    // two short low buzzes — clearly different from the sign-in/out beeps
     [0,0.18].forEach(off=>{
       const o=ac.createOscillator(), g=ac.createGain();
       o.connect(g); g.connect(ac.destination);
@@ -2230,7 +2072,6 @@ function playWindowsSound(){
     const ac = new(window.AudioContext||window.webkitAudioContext)();
     const now = ac.currentTime;
 
-    // 1. Long rising sweep (the "power surge" build-up)
     const sweep = ac.createOscillator();
     const sweepGain = ac.createGain();
     sweep.connect(sweepGain); sweepGain.connect(ac.destination);
@@ -2242,8 +2083,7 @@ function playWindowsSound(){
     sweepGain.gain.exponentialRampToValueAtTime(0.0001, now+2.2);
     sweep.start(now); sweep.stop(now+2.3);
 
-    // 2. Sustained bright chord that blooms and lingers
-    const chordNotes = [523.25, 659.25, 784.0, 1046.5]; // C5 E5 G5 C6
+    const chordNotes = [523.25, 659.25, 784.0, 1046.5];
     chordNotes.forEach((freq,i)=>{
       const o=ac.createOscillator();
       const g=ac.createGain();
@@ -2257,8 +2097,7 @@ function playWindowsSound(){
       o.start(start); o.stop(start+2.7);
     });
 
-    // 3. Arpeggio shimmer cascading upward
-    const arpNotes = [1046.5, 1318.5, 1568.0, 2093.0]; // C6 E6 G6 C7
+    const arpNotes = [1046.5, 1318.5, 1568.0, 2093.0];
     arpNotes.forEach((freq,i)=>{
       const o=ac.createOscillator();
       const g=ac.createGain();
@@ -2272,12 +2111,11 @@ function playWindowsSound(){
       o.start(start); o.stop(start+1.6);
     });
 
-    // 4. Deep sustained bass pad underneath for length
     const bass = ac.createOscillator();
     const bassGain = ac.createGain();
     bass.connect(bassGain); bassGain.connect(ac.destination);
     bass.type='sine';
-    bass.frequency.setValueAtTime(65.41, now+0.9); // C2
+    bass.frequency.setValueAtTime(65.41, now+0.9);
     bassGain.gain.setValueAtTime(0, now+0.9);
     bassGain.gain.linearRampToValueAtTime(0.08, now+1.3);
     bassGain.gain.exponentialRampToValueAtTime(0.0001, now+3.0);
@@ -2297,7 +2135,7 @@ function updateVoiceIcon(){
 }
 function setVoiceMuted(muted){
   localStorage.setItem('lm_voice_muted',muted?'1':'0');
-  if(muted)window.speechSynthesis.cancel(); // stop anything currently speaking
+  if(muted)window.speechSynthesis.cancel();
   updateVoiceIcon();
   const settingsToggle=document.getElementById('voice-enabled-toggle');
   if(settingsToggle)settingsToggle.checked=!muted;
@@ -2305,7 +2143,7 @@ function setVoiceMuted(muted){
 function toggleVoiceMute(){setVoiceMuted(!isVoiceMuted());}
 function onVoiceSettingsToggle(){
   const el=document.getElementById('voice-enabled-toggle');
-  setVoiceMuted(!el.checked); // checked = voice ON
+  setVoiceMuted(!el.checked);
 }
 function speak(text){
   if(isVoiceMuted())return;
@@ -2321,7 +2159,6 @@ function speak(text){
     window.speechSynthesis.speak(utter);
   }catch(e){}
 }
-// preload voices — browsers load them async
 if(window.speechSynthesis) window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();
 function fmtMs(ms){const abs=Math.abs(ms);const h=Math.floor(abs/3600000),m=Math.floor((abs%3600000)/60000),s=Math.floor((abs%60000)/1000);return(ms<0?'-':'')+(h>0?h+'h ':'')+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');}
 function fmtTime(ts){return new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});}
@@ -2351,7 +2188,6 @@ function setBanner(cls,msg){
   if(t) t.textContent=msg;
 }
 
-// ── main scanner (always on) ──────────────────────────────────────────────────
 async function startMainScanner(){
   try{
     mainStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
@@ -2392,27 +2228,9 @@ async function startMainScanner(){
   }
 }
 
-// Per-channel percentile-based contrast stretch ("auto white balance + auto exposure").
-// Clips the darkest/brightest 1% of each channel and stretches the rest to fill 0-255.
-// This is what makes the captured ID photo readable whether the room is dim, bright, or
-// has a color cast from fluorescent/warm lighting — each channel is corrected independently.
-// ── manual capture (button-triggered — no HSV color matching) ─────────────────
 function captureProcessedFrame(v){
-  // capture at 2x upscale for more pixels, then cap the final size so we
-  // reliably stay under Groq's 4MB base64-encoded image limit. A detailed,
-  // well-lit close-up photo compresses to a LARGER file than a blurry one —
-  // uncapped, exactly the best photos were the ones getting rejected outright
-  // by the vendor's request-size limit, which looked like "even good photos
-  // fail" when it was actually "only good photos are big enough to fail."
-  //
-  // NOTE: this used to also run a full auto-levels histogram pass + a 3x3
-  // sharpening convolution over every pixel, on all 3 burst frames, entirely
-  // synchronously — tens of millions of operations blocking the main thread
-  // on every single capture. That was the real cause of capture feeling slow
-  // on weaker hardware. Vision models read plain camera photos just fine on
-  // their own, so this now just captures and resizes — instant instead.
   const SCALE=2;
-  const MAX_DIM=1600; // longest edge, px — plenty for OCR, comfortably small enough to stay under the 4MB limit
+  const MAX_DIM=1600;
   let cw=v.videoWidth*SCALE, ch=v.videoHeight*SCALE;
   if(Math.max(cw,ch)>MAX_DIM){
     const scale=MAX_DIM/Math.max(cw,ch);
@@ -2425,20 +2243,15 @@ function captureProcessedFrame(v){
   ctx.imageSmoothingQuality='high';
   ctx.drawImage(v,0,0,c.width,c.height);
 
-  // encode at a quality that keeps the base64 payload safely under Groq's
-  // 4MB limit — step quality down further if a particularly detailed photo
-  // still comes out too big, rather than ever sending an oversized request.
   let quality=0.85, dataUrl=c.toDataURL('image/jpeg',quality);
-  const approxBytes=()=>Math.ceil(dataUrl.length*0.75); // base64 → raw byte estimate
-  while(approxBytes()>3500000 && quality>0.5){ // stay well clear of the 4MB ceiling
+  const approxBytes=()=>Math.ceil(dataUrl.length*0.75);
+  while(approxBytes()>3500000 && quality>0.5){
     quality-=0.1;
     dataUrl=c.toDataURL('image/jpeg',quality);
   }
   return dataUrl;
 }
 
-// waits for the next actually-painted video frame — not a fixed delay, just
-// however long the browser/camera takes to hand over a fresh frame (~16-33ms)
 function nextPaint(){
   return new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 }
@@ -2458,7 +2271,6 @@ async function takePicture(){
   document.getElementById('main-conf').style.background='#22c55e';
   setPill('reading','Capturing...');
 
-  // burst: 3 real frames back-to-back, as fast as the browser can paint them
   const frames=[];
   for(let i=0;i<3;i++){
     frames.push(captureProcessedFrame(v));
@@ -2466,7 +2278,6 @@ async function takePicture(){
   }
   pendingFrames=frames;
 
-  // show the photo for review instead of sending it off immediately
   document.getElementById('strip-live').style.display='none';
   const preview=document.getElementById('capture-preview');
   preview.src=frames[0];
@@ -2498,9 +2309,6 @@ function readCardNow(){
   processCapture(pendingFrames);
 }
 
-// re-enables the buttons on the SAME photo instead of forcing a full retake —
-// most read failures are transient (network blip, server hiccup), and the
-// photo itself is usually still perfectly fine.
 function reenableReadButtons(){
   const rb=document.getElementById('ai-read-btn');
   if(rb)rb.disabled=false;
@@ -2537,7 +2345,6 @@ async function processCapture(frames){
     setPill('reading',`Got: ${name} / ${idnum}`);
 
     if(name==='UNKNOWN' && idnum==='UNKNOWN'){
-      // nothing could be read — let them try the SAME photo again, or retake if it's genuinely bad
       rejectSound();
       setPill('scanning','Could not read card');
       setBanner('scanning','⚠ No text detected — hold steady and tap Read card again, or Retake if the photo\'s blurry');
@@ -2554,8 +2361,6 @@ async function processCapture(frames){
   }
 }
 
-// ── smart routing: sign in or sign out ───────────────────────────────────────
-// ── MANUAL SIGN IN / OUT (no scan) ───────────────────────────────────────────
 async function manualSignToggle(){
   const idnum=prompt('Enter customer ID number:');
   if(idnum===null) return;
@@ -2570,7 +2375,6 @@ async function manualSignToggle(){
     return;
   }
 
-  // not currently signed in — manual sign in
   const debtAmt=getDebt(idTrim);
   if(debtAmt>0.01){
     const known=customerDirectory[idTrim.toLowerCase()];
@@ -2614,7 +2418,7 @@ async function manualSignToggle(){
   else setBanner('signin',nameTrim+' signed in manually — '+hours+'h session');
 }
 
-let pendingPayment=null; // { kind:'signout', existing, signOutTime, cost, prevDebt, totalDue } | { kind:'settle', idnum, name, phone, owed }
+let pendingPayment=null;
 
 function performSignOut(existing){
   const signOutTime=Date.now();
@@ -2622,7 +2426,6 @@ function performSignOut(existing){
   const cost=calcPrice(elapsed);
 
   if(cost==null){
-    // no rate configured — nothing to collect, just sign out
     finishSignOut(existing,signOutTime,null,null,null);
     return;
   }
@@ -2633,9 +2436,6 @@ function performSignOut(existing){
   openPaymentModal();
 }
 
-// Called once payment is settled, however it was settled (cash / M-Pesa / no charge).
-// This is the one place that actually writes the sign-out + debt to Supabase and
-// updates every part of the UI — every entry point funnels through here.
 async function finishSignOut(existing,signOutTime,paid,debtBefore,debtAfter){
   existing.signedOut=true;
   existing.signOutTime=signOutTime;
@@ -2678,7 +2478,6 @@ async function finishSignOut(existing,signOutTime,paid,debtBefore,debtAfter){
   updateStats();renderRecent();renderSessions();renderActiveCards();renderDebtors();
 }
 
-// ── payment modal (sign-out payments AND standalone debt settlements) ──────────
 function openPaymentModal(){
   if(!pendingPayment)return;
   const p=pendingPayment;
@@ -2783,8 +2582,6 @@ async function sendMpesaSignOutPrompt(){
   }
 }
 
-// Polls the mpesa_transactions row (realtime also listens for sessions/debts changes,
-// this is just the safety-net that closes the modal once the callback has run).
 function watchMpesaTransaction(checkoutRequestId){
   if(mpesaPollTimer)clearInterval(mpesaPollTimer);
   let elapsed=0;
@@ -2797,10 +2594,6 @@ function watchMpesaTransaction(checkoutRequestId){
       const settledDebt = p && (p.kind==='settle' ? p.owed>0.01 : p.prevDebt>0.01);
       const settledName = p && (p.kind==='settle' ? p.name : p.existing.name);
       closePaymentModal();
-      // the /api/mpesa-callback function already updated sessions/debts server-side —
-      // the realtime subscriptions already in place will refresh the UI on their own.
-      // M-Pesa always collects the exact amount due, so a successful payment here
-      // always fully clears whatever debt/balance was owed.
       if(settledDebt) showDebtSettledPopup(settledName);
     }else if(data && data.status==='failed'){
       clearInterval(mpesaPollTimer);
@@ -2820,7 +2613,6 @@ function cancelMpesaWait(){
 }
 
 function routeCard(url,name,idnum){
-  // check if this person is already signed in
   const existing=sessions.find(s=>
     !s.signedOut&&(
       s.idnum.toLowerCase()===idnum.toLowerCase()||
@@ -2832,7 +2624,6 @@ function routeCard(url,name,idnum){
     setPill('signout','✓ Signed out: '+existing.name);
     setTimeout(()=>armCapture(),3000);
   }else{
-    // NEW CUSTOMER — fill sign-in form
     document.getElementById('cap-thumb').src=url;
     document.getElementById('cap-row').style.display='flex';
     document.getElementById('scan-badge').style.display='none';
@@ -2853,9 +2644,6 @@ function routeCard(url,name,idnum){
 
 function setHours(h){}
 
-// ── RETURNING CUSTOMER DIRECTORY ─────────────────────────────────────────────
-// Remembers name+phone against ID number so regulars can sign in almost instantly —
-// type the ID, the rest fills itself. Synced via Supabase so it works from any device.
 async function saveToDirectory(idnum,name,phone){
   if(!idnum||!name)return;
   const key=idnum.toLowerCase();
@@ -2874,8 +2662,6 @@ function onIdInput(){
   const nameEl=document.getElementById('inp-name');
   const phoneEl=document.getElementById('inp-phone');
 
-  // only attempt a lookup once the ID looks reasonably complete, and only if the name
-  // field is still empty (don't clobber what staff already typed/scanned)
   if(idnum.length>=6&&!nameEl.value.trim()){
     const known=lookupCustomer(idnum);
     if(known){
@@ -2907,7 +2693,7 @@ function checkSignInReady(){
   document.getElementById('signin-btn').disabled=!(name&&idnum);
 }
 
-let pendingDebtBlock=null; // {name, idnum, phone, debtAmt}
+let pendingDebtBlock=null;
 
 async function doSignIn(){
   const name=document.getElementById('inp-name').value.trim();
@@ -2951,8 +2737,6 @@ async function completeSignIn(name,idnum,phone){
   focusSignInForm();
 }
 
-// ── debt block modal — blocks sign-in for anyone who still owes money,
-// unless the owner deliberately overrides it ────────────────────────────────
 function openDebtBlockModal(){
   if(!pendingDebtBlock)return;
   const {name,idnum,debtAmt}=pendingDebtBlock;
@@ -2965,7 +2749,7 @@ function openDebtBlockModal(){
     sinceWrap.style.display='inline';
     document.getElementById('db-since').textContent=fmtDate(since)+' at '+fmtTime(since);
   }else{
-    sinceWrap.style.display='none'; // no record of when — don't show a made-up date
+    sinceWrap.style.display='none';
   }
   document.getElementById('debt-block-modal').style.display='flex';
 }
@@ -2974,11 +2758,6 @@ function closeDebtBlockModal(){
   pendingDebtBlock=null;
 }
 
-// ── generic confirm/alert modal — replaces every native confirm()/alert() ──
-// showConfirmModal resolves true/false based on which button was pressed.
-// showAlertModal is the same modal with the Cancel button hidden — resolves
-// once OK is pressed, so callers can `await` it if they need to wait, or
-// just fire it without awaiting for a pure notice.
 let genericModalResolve=null;
 function showConfirmModal({title='Are you sure?',message='',confirmText='OK',cancelText='Cancel',danger=false,icon}={}){
   return new Promise(resolve=>{
@@ -3020,9 +2799,6 @@ function showAlertModal(message,{title='Notice',danger=false,icon}={}){
     document.getElementById('generic-modal').style.display='flex';
   });
 }
-// Pops up briefly whenever a customer's outstanding debt actually reaches zero
-// as a result of a payment — a quick tick toast, not a blocking modal, so it
-// doesn't get in the way of the next sign-in/scan.
 function showDebtSettledPopup(name){
   let toast=document.getElementById('debt-settled-toast');
   if(toast) toast.remove();
@@ -3063,17 +2839,12 @@ function resetScan(){
   document.getElementById('inp-phone').value='';
   document.getElementById('signin-btn').disabled=true;
   document.getElementById('known-badge').style.display='none';
-  // explicitly wipe the captured ID photo — it was only ever needed to confirm
-  // the extracted name/ID matched before signing in, never saved to a database
-  // or server. Clearing the src here (not just hiding the row) makes sure
-  // nothing from it lingers in the browser once the sign-in is done.
   const thumb=document.getElementById('cap-thumb');
   if(thumb)thumb.src='';
   armCapture();
   focusSignInForm();
 }
 
-// ── views / render ────────────────────────────────────────────────────────────
 function toggleMobileNavMenu(){
   const d=document.getElementById('mnav-dropdown');
   const s=document.getElementById('mnav-scrim');
@@ -3096,24 +2867,13 @@ function switchView(v){
     if(mt) mt.classList.toggle('on',n===v);
   });
   closeMobileNavMenu();
-  // on mobile, only show the camera scanner while on the Sign in tab —
-  // it'd just be clutter sitting above Sessions/Calendar/Settings
   const sbEl=document.querySelector('.sb');
   if(sbEl) sbEl.classList.toggle('sb-hide-mobile', v!=='signin');
-  // Stop the camera stream whenever we're off the Sign in tab, and restart it
-  // when we come back — not just hide it. A running getUserMedia stream keeps
-  // decoding video in the background even under display:none/inactive tabs,
-  // which is a heavy, continuous drain regardless of screen size. This used to
-  // only apply on mobile viewports, which meant on desktop/laptop the camera
-  // just kept decoding forever once started, no matter which tab you were on —
-  // that was still causing app-wide lag while typing on every other page.
   if(v!=='signin'){
     pauseMobileCamera();
   }else if(cameraEnabled && !mainStream){
     startMainScanner();
   }
-  // clean up an orphaned single-payment poll timer if the owner navigates
-  // away with the payment modal already closed but its timer still running
   if(typeof mpesaPollTimer!=='undefined' && mpesaPollTimer){
     const pm=document.getElementById('payment-modal');
     if(!pm || pm.style.display!=='flex'){ clearInterval(mpesaPollTimer); mpesaPollTimer=null; }
@@ -3134,8 +2894,6 @@ function switchView(v){
   }
 }
 
-
-// ── CAMERA TOGGLE ────────────────────────────────────────────────────────────
 let cameraEnabled = localStorage.getItem('lm_cam_enabled') !== '0';
 
 function toggleCameraEnabled(){
@@ -3151,10 +2909,6 @@ function toggleCameraEnabled(){
   }
 }
 
-// Lightweight pause used when navigating away from Sign in on mobile — stops
-// the camera hardware/stream (the actual expensive part) without touching the
-// pill/banner text, since those belong to the Sign-in view specifically and
-// this isn't the user deliberately turning the camera off in Settings.
 function pauseMobileCamera(){
   if(mainStream){
     mainStream.getTracks().forEach(t=>t.stop());
@@ -3178,7 +2932,6 @@ function stopMainScanner(){
   setBanner('scanning','Camera is off — use manual sign in / out');
 }
 
-// ── ACTIVE SESSION COUNT BADGE ───────────────────────────────────────────────
 function renderActiveCards(){
   const liveCount = document.getElementById('live-count');
   if(liveCount) liveCount.textContent = sessions.filter(s=>!s.signedOut).length + ' active';
@@ -3194,7 +2947,6 @@ async function reactivateSession(sessionId){
   const s = sessions.find(x=>x.id===sessionId);
   if(!s||!s.signedOut) return;
   if(!await showConfirmModal({title:'Reactivate this session?',message:'Put <strong>'+s.name+'</strong> back to active? This undoes the sign-out.',confirmText:'Reactivate',icon:'ti-rotate'})) return;
-  // undo whatever payment/debt was recorded during that sign-out
   if(s.debtAfter!==undefined){
     await setDebtFor(s.idnum,s.debtBefore||0);
     delete s.amountPaid;delete s.debtAfter;delete s.debtBefore;
@@ -3212,11 +2964,6 @@ async function reactivateSession(sessionId){
   await sb.from('sessions').update({signed_out:false,sign_out_time:null,amount_paid:null,debt_after:null,debt_before:null}).eq('id',s.id);
 }
 
-// deletes a single sign-in record — used when someone wants to remove one row
-// (typo'd entry, test data, duplicate) without touching anything else. Doesn't
-// touch that customer's debt — the debt ledger is independent, so if they still
-// owe money it stays exactly as it was, just no longer tied to this particular
-// visit's row.
 async function deleteSessionRow(sessionId){
   const s = sessions.find(x=>x.id===sessionId);
   if(!s) return;
@@ -3231,7 +2978,6 @@ async function deleteSessionRow(sessionId){
   await sb.from('sessions').delete().eq('id',sessionId);
 }
 
-// ── CALENDAR ──────────────────────────────────────────────────────────────────
 let calViewDate = new Date();
 let calSelectedDate = new Date();
 const MONTH_NAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -3252,10 +2998,6 @@ function calToday(){
   renderCalendar();
 }
 
-// revenue for one day: prefer the finalized total (survives even after that
-// day's sessions get cleared) — fall back to computing live from whatever
-// sessions still exist for that date (covers today, and any day that hasn't
-// been finalized yet).
 function revenueForDateKey(dateKey){
   if(dailyTotals[dateKey]) return dailyTotals[dateKey].revenue;
   return computeDayStats(dateKey).revenue;
@@ -3334,9 +3076,6 @@ function renderCalDayList(){
       }else{
         meta=`${fmtTime(s.startTime)} · booked ${s.hours}h · still active`;
       }
-      // red = currently owes money (unless it's been cleared, in which case this
-      // doesn't apply); green = still signed in / active right now. Debt takes
-      // priority since it's the more urgent flag if somehow both are true.
       const owes=getDebt(s.idnum)>0.01;
       const nameColor=owes?'var(--red)':(!s.signedOut?'var(--green)':'inherit');
       return `<div class="cal-list-item">
@@ -3349,10 +3088,6 @@ function renderCalDayList(){
     }).join('');
   }
 
-  // separate section: anyone whose debt started on this exact day and is still
-  // unpaid — this can include people whose session started on a different day
-  // (e.g. debt only got flagged at a later sign-out) so it's not limited to
-  // whatever's in the sessions list above.
   const debtorsSince=Object.keys(debtSince).filter(idnum=>
     getDebt(idnum)>0.01 && sameDay(debtSince[idnum],d)
   );
@@ -3377,7 +3112,6 @@ function renderCalDayList(){
   list.innerHTML=sessionsHtml+debtorsHtml;
 }
 
-// ── LIVE SIMULATION ──────────────────────────────────────────────────────────
 let simRunning=false,simAbort=false;
 const SIM_CUSTOMERS=[
   {name:'James Mwangi',   id:'KE19283746', phone:'0712 345 678', hours:2},
@@ -3458,33 +3192,26 @@ function loadDemoData(){
   ];
   const demo=[];
 
-  // 1. Active, well within time (green)
   demo.push({id:now-1, name:names[0].name, idnum:names[0].id, phone:names[0].phone, hours:2,
     startTime: now - 25*60000, durationMs: 2*3600000, signedOut:false, signOutTime:null});
 
-  // 2. Active, almost done (amber, <5 min left)
   demo.push({id:now-2, name:names[1].name, idnum:names[1].id, phone:names[1].phone, hours:1,
     startTime: now - 57*60000, durationMs: 1*3600000, signedOut:false, signOutTime:null});
 
-  // 3. Active, overtime (red)
   demo.push({id:now-3, name:names[2].name, idnum:names[2].id, phone:names[2].phone, hours:1,
     startTime: now - 80*60000, durationMs: 1*3600000, signedOut:false, signOutTime:null});
 
-  // 4. Active, just started
   demo.push({id:now-4, name:names[3].name, idnum:names[3].id, phone:names[3].phone, hours:3,
     startTime: now - 4*60000, durationMs: 3*3600000, signedOut:false, signOutTime:null});
 
-  // 5. Signed out — finished on time
   demo.push({id:now-5, name:names[4].name, idnum:names[4].id, phone:names[4].phone, hours:1,
     startTime: now - 130*60000, durationMs: 1*3600000, signedOut:true,
     signOutTime: now - 70*60000});
 
-  // 6. Signed out — with overtime
   demo.push({id:now-6, name:names[5].name, idnum:names[5].id, phone:names[5].phone, hours:2,
     startTime: now - 200*60000, durationMs: 2*3600000, signedOut:true,
     signOutTime: now - 90*60000});
 
-  // 7. Signed out — exact time
   demo.push({id:now-7, name:names[6].name, idnum:names[6].id, phone:names[6].phone, hours:0.5,
     startTime: now - 100*60000, durationMs: 0.5*3600000, signedOut:true,
     signOutTime: now - 70*60000});
@@ -3499,7 +3226,6 @@ function loadDemoData(){
   switchView('sessions');
 }
 
-// ── premium micro-interactions ──────────────────────────────────────────────
 function animateNumber(el,target,opts){
   if(!el)return;
   opts=opts||{};
@@ -3511,7 +3237,7 @@ function animateNumber(el,target,opts){
   el.dataset.rawVal=target;
   function tick(now){
     const t=Math.min(1,(now-startTime)/duration);
-    const eased=1-Math.pow(1-t,3); // ease-out cubic
+    const eased=1-Math.pow(1-t,3);
     const val=from+(target-from)*eased;
     el.textContent=formatter(val);
     if(t<1)requestAnimationFrame(tick);
@@ -3612,7 +3338,6 @@ function renderRecent(){
     if(q&&q.value.trim()) filterTable('recent-tb',q.value);
   }
   renderActiveCards();
-  // sync home stats
   const now=Date.now();
   const a=sessions.filter(s=>!s.signedOut).length;
   const o=0;
@@ -3632,7 +3357,6 @@ function filterTable(tbodyId,query){
     row.style.display=match?'':'none';
     if(match)visible++;
   });
-  // show empty state if nothing matches
   let emptyRow=document.querySelector(`#${tbodyId} .search-empty`);
   if(!visible&&q){
     if(!emptyRow){
@@ -3663,9 +3387,6 @@ function sessionRowHtml(s,num,mode){
     outcell='—';
   }
   const price=calcPrice(elapsedMs);
-  // in the Debt tab, Status should always read "Debt" — every row here is a
-  // debtor by definition, so Active/Done would just be noise/confusing next
-  // to the Settle up action.
   if(mode==='debt') badge='<span class="badge over">Debt</span>';
   const pricecell=price==null
     ?'<span style="color:var(--ink3);">—</span>'
@@ -3680,9 +3401,6 @@ function sessionRowHtml(s,num,mode){
   }else{
     action=`<button onclick="reactivateSession('${s.id}')" title="Signed out by mistake? Put them back to active." style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600;font-family:var(--sans);width:82px;text-align:center;">Reactivate</button>`;
   }
-  // delete this record entirely — Sessions/Recent tabs only, not the Debt tab
-  // (deleting there would just leave the debt behind with no context, so the
-  // owner should settle it or go delete the record from Sessions instead).
   if(mode!=='debt'){
     action=`<div style="display:flex;align-items:center;gap:5px;">${action}<button onclick="deleteSessionRow('${s.id}')" title="Delete this record" style="background:var(--surface2);border:1px solid var(--line2);color:var(--ink3);width:26px;height:26px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;"><i class="ti ti-trash"></i></button></div>`;
   }
@@ -3735,7 +3453,7 @@ function startEdit(td,sessionId,field){
     }else{
       if(raw&&raw!=='—'){
         s[field]=raw;
-        const dbField=field==='idnum'?'idnum':field; // name/idnum/phone map 1:1
+        const dbField=field==='idnum'?'idnum':field;
         sb.from('sessions').update({[dbField]:raw}).eq('id',s.id);
       }
     }
@@ -3748,9 +3466,6 @@ function startEdit(td,sessionId,field){
   });
   inp.addEventListener('click',e=>e.stopPropagation());
 }
-// ── DEBTORS — its own category, independent of the sessions table ─────────────
-// Reads straight from the debts ledger, so it survives the daily auto-clear
-// even after that customer's session rows have been deleted.
 function renderDebtors(){
   const tb=document.getElementById('debt-tb');
   if(!tb)return;
@@ -3765,14 +3480,10 @@ function renderDebtors(){
   }
   entries.sort((a,b)=>debts[b]-debts[a]);
   tb.innerHTML=entries.map((idnum,i)=>{
-    // most recent session for this customer — kept forever while they still
-    // owe money (the daily auto-clear skips debtors), so this is always accurate
     const matching=sessions.filter(s=>s.idnum.toLowerCase()===idnum.toLowerCase())
       .sort((a,b)=>b.startTime-a.startTime);
     const s=matching[0];
     if(s) return sessionRowHtml(s,i+1,'debt');
-    // no session on record (e.g. debt was set manually) — still show a row from
-    // what we do know, so the customer isn't invisible on this page
     const info=customerDirectory[idnum]||{name:'Unknown',phone:''};
     return `<tr>
       <td class="td-num" data-label="#">${String(i+1).padStart(2,'0')}</td>
@@ -3808,10 +3519,6 @@ async function clearAll(){
   sessions=[];updateStats();renderSessions();renderRecent();
   await sb.from('sessions').delete().eq('owner_id',currentUserId);
 }
-// Updates just the ticking timer text for active sessions, in place — no
-// rebuilding rows/tables. This runs every second; a full re-render every
-// second was the main cause of phone-only lag (rebuilding a whole table's
-// DOM 60x/minute is cheap on a laptop, very expensive on real phone hardware).
 function tickLiveTimers(){
   document.querySelectorAll('.live-timer').forEach(el=>{
     const start=parseInt(el.dataset.start,10);
@@ -3834,11 +3541,6 @@ setInterval(()=>{
   tickLiveTimers();
 },1000);
 
-// ── auto-start on load ────────────────────────────────────────────────────────
-// ── AUTH ─────────────────────────────────────────────────────────────────────
-// bridges the landing page to the existing auth screen — hides the marketing
-// page, reveals sign-in, and starts the (until now dormant) bike animation
-// only once there's actually something for it to sit behind.
 function showAuthFromLanding(mode){
   document.getElementById('home-landing').style.display='none';
   document.getElementById('auth-wrap').style.display='grid';
@@ -3862,14 +3564,10 @@ async function doSignup(){
   const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{name}}});
   if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-user-plus"></i> Create account';}
   if(error) return showErr('signup-err',error.message);
-  // Supabase deliberately does NOT return an error for a duplicate email (to avoid
-  // leaking which emails are registered) — instead it returns a user object with an
-  // EMPTY identities array and no session. This is the documented way to detect it.
   if(data.user && Array.isArray(data.user.identities) && data.user.identities.length===0){
     return showErr('signup-err','An account with this email already exists — try logging in instead.');
   }
   if(!data.session){
-    // email confirmation is required by the Supabase project settings
     return showErr('signup-err','Account created — check your email to confirm, then log in.');
   }
   currentUserId=data.user.id;
@@ -3911,7 +3609,6 @@ async function launchDashboard(name){
   loadMpesaFields();
   updateStats();renderRecent();renderSessions();renderActiveCards();renderDailyHistory();updateTodayLiveTotal();renderDebtors();
 
-  // restore camera toggle state
   const camChk=document.getElementById('cam-enabled');
   if(camChk) camChk.checked=cameraEnabled;
   const statusText=document.getElementById('cam-status-text');
@@ -3939,7 +3636,6 @@ async function doLogout(){
   showLogin();
 }
 
-// ── auto-start on load ────────────────────────────────────────────────────────
 window.addEventListener('load',async ()=>{
   const {data:{session}}=await sb.auth.getSession();
   if(session){
@@ -3948,11 +3644,9 @@ window.addEventListener('load',async ()=>{
     const {data:profile}=await sb.from('profiles').select('name').eq('id',currentUserId).maybeSingle();
     await launchDashboard(profile?.name || session.user.email);
   }
-  // voices preload
   if(window.speechSynthesis)window.speechSynthesis.getVoices();
 });
 
-// ── TYPEWRITER ────────────────────────────────────────────────────────────────
 (function(){
   const phrases=['Welcome back','Good to see you','Sign in to continue','Your lounge awaits'];
   let pi=0,ci=0,deleting=false;
@@ -3984,26 +3678,14 @@ window.addEventListener('load',async ()=>{
   setTimeout(tick,600);
 })();
 
-// ── BIKE CANVAS ANIMATION ────────────────────────────────────────────────────
-// This is a purely decorative loop for the login screen. Left unchecked it runs
-// requestAnimationFrame forever (heavy shadowBlur draws, every ~16ms) even after
-// auth-wrap is hidden post-login — a permanent background CPU/GPU hog that was
-// the real source of the app-wide lag while typing/clicking/scrolling. We expose
-// window.stopBikeCanvas() and call it the moment the dashboard launches.
-// It also never runs at all on mobile — CSS already hides .auth-left (which
-// holds the canvas) under 768px, so on phones/tablets this is pure wasted
-// CPU/GPU with nothing on screen to show for it. Desktop/laptop view only.
-// Starts OFF by default now — the landing page (#home-landing) shows first,
-// not this screen, so there's nothing to animate yet. showAuthFromLanding()
-// calls window.startBikeCanvas() the moment the login screen actually appears.
 let bikeAnimStopped=true;
 window.stopBikeCanvas=function(){ bikeAnimStopped=true; };
 window.startBikeCanvas=function(){
-  if(window.matchMedia('(max-width:768px)').matches) return; // stays off on mobile
+  if(window.matchMedia('(max-width:768px)').matches) return;
   if(bikeAnimStopped && window._bikeFrameFn){ bikeAnimStopped=false; window._bikeFrameFn(); }
 };
 (function(){
-  if(window.matchMedia('(max-width:768px)').matches) return; // mobile: never start it
+  if(window.matchMedia('(max-width:768px)').matches) return;
   const canvas=document.getElementById('bike-canvas');
   if(!canvas)return;
   const ctx=canvas.getContext('2d');
@@ -4019,7 +3701,6 @@ window.startBikeCanvas=function(){
     if(window.matchMedia('(max-width:768px)').matches) bikeAnimStopped=true;
   });
 
-  // ── draw bike silhouette with neon glow ──────────────────────────────────
   function drawBike(x,y,sz,alpha,color){
     ctx.save();
     ctx.globalAlpha=alpha;
@@ -4035,7 +3716,6 @@ window.startBikeCanvas=function(){
     const rx=x, ry=y;
     const fx=x+rw*2.5, fy=y;
 
-    // wheels with glow
     [rx,fx].forEach(wx=>{
       ctx.beginPath(); ctx.arc(wx,ry,rw,0,Math.PI*2); ctx.stroke();
       for(let i=0;i<6;i++){
@@ -4048,7 +3728,6 @@ window.startBikeCanvas=function(){
       ctx.beginPath(); ctx.arc(wx,ry,rw*.12,0,Math.PI*2); ctx.fill();
     });
 
-    // frame
     const bb={x:rx+rw*1.05,y:ry-rw*.12};
     const st={x:rx+rw*.58,y:ry-rw*1.22};
     const ht={x:fx-rw*.18,y:ry-rw*1.12};
@@ -4060,7 +3739,6 @@ window.startBikeCanvas=function(){
     ctx.beginPath(); ctx.moveTo(ht.x-sz*.02,ht.y-sz*.01); ctx.lineTo(ht.x+sz*.15,ht.y-sz*.09); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(st.x-sz*.1,st.y+sz*.01); ctx.lineTo(st.x+sz*.12,st.y-sz*.01); ctx.stroke();
 
-    // rider
     if(sz>45){
       ctx.lineWidth=sz*.075;
       ctx.beginPath();
@@ -4078,7 +3756,6 @@ window.startBikeCanvas=function(){
     ctx.restore();
   }
 
-  // ── draw wheel sparks ─────────────────────────────────────────────────────
   function drawSparks(x,y,sz,alpha,color){
     ctx.save();
     ctx.globalAlpha=alpha*.55;
@@ -4095,7 +3772,6 @@ window.startBikeCanvas=function(){
       ctx.arc(px,py,sz*.025*(Math.random()+.5),0,Math.PI*2);
       ctx.fill();
     }
-    // rear wheel
     for(let i=0;i<4;i++){
       const a=Math.random()*Math.PI*2;
       const dist=rw*(.7+Math.random()*.4);
@@ -4106,7 +3782,6 @@ window.startBikeCanvas=function(){
     ctx.restore();
   }
 
-  // ── bike layers back→front ────────────────────────────────────────────────
   const LAYERS=[
     {scale:.22,speed:1.4,alpha:.18,yRatio:.72,count:4,color:'#86efac'},
     {scale:.42,speed:2.2,alpha:.40,yRatio:.80,count:3,color:'#4ade80'},
@@ -4129,7 +3804,6 @@ window.startBikeCanvas=function(){
     }
   });
 
-  // ── speed streaks ─────────────────────────────────────────────────────────
   const streaks=Array.from({length:55},()=>({
     x:Math.random()*W,
     y:H*(0.55+Math.random()*.42),
@@ -4139,11 +3813,8 @@ window.startBikeCanvas=function(){
     color:Math.random()>.7?'#ffffff':'#4ade80',
   }));
 
-  // ── perspective road grid ─────────────────────────────────────────────────
   function drawRoad(){
-    // horizon line
     const hy=H*.62;
-    // converging lines from horizon to bottom edge
     const vanishX=W*.42;
     const lines=8;
     for(let i=0;i<=lines;i++){
@@ -4156,7 +3827,6 @@ window.startBikeCanvas=function(){
       ctx.lineTo(bx,H);
       ctx.stroke();
     }
-    // horizontal road dashes
     [.70,.78,.86,.93].forEach((r,ri)=>{
       const y=H*r;
       ctx.globalAlpha=0.05+(ri*.015);
@@ -4164,7 +3834,6 @@ window.startBikeCanvas=function(){
       ctx.lineWidth=.6;
       ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
     });
-    // centre dashes
     for(let d=0;d<12;d++){
       const t=d/12;
       const y=hy+(H-hy)*t;
@@ -4176,7 +3845,6 @@ window.startBikeCanvas=function(){
     ctx.globalAlpha=1;
   }
 
-  // ── ambient particles ─────────────────────────────────────────────────────
   const particles=Array.from({length:40},()=>({
     x:Math.random()*W,y:H*(.4+Math.random()*.5),
     r:Math.random()*.8+.2,a:Math.random()*.12,
@@ -4187,7 +3855,6 @@ window.startBikeCanvas=function(){
     ctx.fillStyle='rgba(8,18,10,0.78)';
     ctx.fillRect(0,0,W,H);
 
-    // top vignette
     const tv=ctx.createLinearGradient(0,0,0,H*.4);
     tv.addColorStop(0,'rgba(5,12,7,.6)');
     tv.addColorStop(1,'transparent');
@@ -4195,7 +3862,6 @@ window.startBikeCanvas=function(){
 
     drawRoad();
 
-    // speed streaks
     streaks.forEach(s=>{
       ctx.globalAlpha=s.alpha;
       ctx.strokeStyle=s.color;
@@ -4208,7 +3874,6 @@ window.startBikeCanvas=function(){
       if(s.x+s.len<0){s.x=W+Math.random()*80;s.y=H*(.55+Math.random()*.42);}
     });
 
-    // ambient particles
     particles.forEach(p=>{
       ctx.globalAlpha=p.a;
       ctx.fillStyle='#4ade80';
@@ -4221,11 +3886,9 @@ window.startBikeCanvas=function(){
     });
     ctx.globalAlpha=1;
 
-    // bikes back→front
     bikes.sort((a,b)=>a.scale-b.scale).forEach(b=>{
       b.sz=H*.2*b.scale;
       const by=H*b.yRatio;
-      // motion blur trail
       for(let t=1;t<=4;t++){
         ctx.globalAlpha=b.alpha*(0.08/t);
         ctx.fillStyle=b.color;
@@ -4243,7 +3906,6 @@ window.startBikeCanvas=function(){
       if(b.x+b.sz*3.8<0) b.x=W+b.sz*(0.5+Math.random()*1.2);
     });
 
-    // bottom fade
     const bf=ctx.createLinearGradient(0,H*.8,0,H);
     bf.addColorStop(0,'transparent');
     bf.addColorStop(1,'rgba(5,12,7,.7)');
@@ -4256,7 +3918,7 @@ window.startBikeCanvas=function(){
 })();
 (function(){
   const lines=['Smart session','tracking for your','lounge business'];
-  const greenLineIdx=2; // "lounge business" is styled green
+  const greenLineIdx=2;
   const fullText=lines.join('\n');
   const greenStart=fullText.length-lines[greenLineIdx].length;
   const el=document.getElementById('auth-tagline-text');
@@ -4297,11 +3959,6 @@ window.startBikeCanvas=function(){
   setTimeout(tick,400);
 })();
 
-// ── LANDING PAGE — live-ticking demo card ────────────────────────────────────
-// Purely decorative, and self-stopping the moment #home-landing is hidden
-// (sign-in clicked, or an already-logged-in user skips straight to their
-// dashboard) — same lesson as the bike canvas earlier: nothing should tick
-// in the background once its own screen is gone.
 (function(){
   const yearEl=document.getElementById('lp-year');
   if(yearEl) yearEl.textContent=new Date().getFullYear();
@@ -4311,12 +3968,12 @@ window.startBikeCanvas=function(){
   const totalEl=document.getElementById('lp-demo-total');
   if(!timerEl||!costEl||!totalEl) return;
 
-  const RATE=150; // KSh/hour — purely for the demo's visual pace, not real pricing
+  const RATE=150;
   let elapsedSec=42, todayTotal=1850;
 
   function tick(){
     const landing=document.getElementById('home-landing');
-    if(!landing || landing.style.display==='none') return; // stop for good once hidden
+    if(!landing || landing.style.display==='none') return;
 
     elapsedSec++;
     const m=String(Math.floor(elapsedSec/60)).padStart(2,'0');
