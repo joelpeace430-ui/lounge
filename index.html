@@ -131,8 +131,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .auth-fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
 .auth-fg label{font-size:11px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:.07em;}
 .auth-input-wrap{position:relative;}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;
+  color:var(--ink3);cursor:pointer;padding:4px;display:flex;align-items:center;font-size:16px;}
+.pw-toggle:hover{color:var(--ink);}
 .auth-input-wrap i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#999;font-size:16px;}
-.auth-fg input{width:100%;padding:12px 14px 12px 40px;border:1.5px solid #e8e8ea;border-radius:12px;font-size:14px;font-family:var(--sans);color:#111;outline:none;background:#fafafa;transition:border .18s var(--ease),box-shadow .18s var(--ease),background .18s var(--ease);}
+.auth-fg input{width:100%;padding:12px 40px 12px 40px;border:1.5px solid #e8e8ea;border-radius:12px;font-size:14px;font-family:var(--sans);color:#111;outline:none;background:#fafafa;transition:border .18s var(--ease),box-shadow .18s var(--ease),background .18s var(--ease);}
 .auth-fg input:focus{border-color:#30b355;background:#fff;box-shadow:0 0 0 4px rgba(48,179,85,.12);}
 .auth-btn{width:100%;padding:13px;border-radius:12px;background:#1d1d1f;color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--sans);margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .18s var(--ease-spring);box-shadow:0 2px 10px rgba(0,0,0,.12);}
 .auth-btn:hover{background:#000;transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.18);}
@@ -746,7 +749,6 @@ body.dark{
         <p class="lp-sub">The timer starts the second a bike goes out. M-Pesa payment happens right there when it comes back. Nobody's balance gets forgotten — because the app remembers, even when you're busy.</p>
         <div class="lp-cta-row">
           <button class="lp-cta-primary" onclick="showAuthFromLanding('signup')"><i class="ti ti-rocket"></i>Get started free</button>
-          <button class="lp-cta-secondary" onclick="showAuthFromLanding('login')"><i class="ti ti-login"></i>Sign in</button>
         </div>
       </div>
       <div class="lp-demo-wrap">
@@ -923,7 +925,7 @@ body.dark{
       </div>
       <div class="auth-fg">
         <label>Password</label>
-        <div class="auth-input-wrap"><i class="ti ti-lock"></i><input type="password" id="login-pass" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+        <div class="auth-input-wrap"><i class="ti ti-lock"></i><input type="password" id="login-pass" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/><button type="button" class="pw-toggle" onclick="togglePasswordVisibility('login-pass',this)"><i class="ti ti-eye"></i></button></div>
       </div>
       <button class="auth-btn" onclick="doLogin()"><i class="ti ti-login"></i> Sign in to dashboard</button>
       <div class="auth-switch">Don't have an account? <a onclick="showSignup()">Create one free</a></div>
@@ -944,7 +946,7 @@ body.dark{
       </div>
       <div class="auth-fg">
         <label>Password</label>
-        <div class="auth-input-wrap"><i class="ti ti-lock"></i><input type="password" id="signup-pass" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter')doSignup()"/></div>
+        <div class="auth-input-wrap"><i class="ti ti-lock"></i><input type="password" id="signup-pass" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter')doSignup()"/><button type="button" class="pw-toggle" onclick="togglePasswordVisibility('signup-pass',this)"><i class="ti ti-eye"></i></button></div>
       </div>
       <button class="auth-btn" onclick="doSignup()"><i class="ti ti-user-plus"></i> Create account</button>
       <div class="auth-switch">Already have an account? <a onclick="showLogin()">Sign in</a></div>
@@ -1280,7 +1282,6 @@ body.dark{
               <div class="panel-icon"><i class="ti ti-list-details"></i></div>
               <span id="cal-day-label">Select a day</span>
             </div>
-            <span id="cal-day-revenue" style="font-size:13px;font-weight:700;color:var(--green);font-family:var(--mono);"></span>
           </div>
           <div id="cal-day-list" style="padding:14px 18px;">
             <p style="font-size:13px;color:var(--ink3);">Click a day on the calendar to see sessions from that day.</p>
@@ -2799,6 +2800,17 @@ function showAlertModal(message,{title='Notice',danger=false,icon}={}){
     document.getElementById('generic-modal').style.display='flex';
   });
 }
+function togglePasswordVisibility(inputId,btn){
+  const input=document.getElementById(inputId);
+  const icon=btn.querySelector('i');
+  if(input.type==='password'){
+    input.type='text';
+    icon.className='ti ti-eye-off';
+  }else{
+    input.type='password';
+    icon.className='ti ti-eye';
+  }
+}
 function showDebtSettledPopup(name){
   let toast=document.getElementById('debt-settled-toast');
   if(toast) toast.remove();
@@ -3060,10 +3072,8 @@ function renderCalDayList(){
   const list=document.getElementById('cal-day-list');
   const d=calSelectedDate;
   label.textContent=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-  const revEl=document.getElementById('cal-day-revenue');
-  if(revEl) revEl.textContent=fmtPrice(revenueForDateKey(dateKeyOf(d.getTime())));
 
-  const daySessions=sessions.filter(s=>sameDay(s.startTime,d));
+  const daySessions=sessions.filter(s=>sameDay(s.startTime,d) && (!s.signedOut || getDebt(s.idnum)>0.01));
   let sessionsHtml;
   if(!daySessions.length){
     sessionsHtml='<p style="font-size:13px;color:var(--ink3);">No sessions on this day.</p>';
