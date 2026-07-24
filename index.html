@@ -3020,10 +3020,28 @@ function showAlertModal(message,{title='Notice',danger=false,icon}={}){
     document.getElementById('generic-modal').style.display='flex';
   });
 }
-// Pops up whenever a customer's outstanding debt actually reaches zero as a
-// result of a payment — used across the cash, signout, and M-Pesa paths.
+// Pops up briefly whenever a customer's outstanding debt actually reaches zero
+// as a result of a payment — a quick tick toast, not a blocking modal, so it
+// doesn't get in the way of the next sign-in/scan.
 function showDebtSettledPopup(name){
-  showAlertModal(`<strong>${name}</strong> has fully settled their debt.`,{title:'Debt settled',icon:'ti-check'});
+  let toast=document.getElementById('debt-settled-toast');
+  if(toast) toast.remove();
+  toast=document.createElement('div');
+  toast.id='debt-settled-toast';
+  toast.style.cssText='position:fixed;top:24px;left:50%;transform:translateX(-50%) translateY(-12px);'
+    +'background:var(--green);color:#fff;padding:12px 20px;border-radius:12px;'
+    +'display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;font-family:var(--sans);'
+    +'box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:9999;opacity:0;'
+    +'transition:opacity .25s ease,transform .25s ease;';
+  toast.innerHTML='<span style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.25);'
+    +'display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ti ti-check" style="font-size:15px;"></i></span>'
+    +'<span>'+name+' — debt settled</span>';
+  document.body.appendChild(toast);
+  requestAnimationFrame(()=>{ toast.style.opacity='1'; toast.style.transform='translateX(-50%) translateY(0)'; });
+  setTimeout(()=>{
+    toast.style.opacity='0'; toast.style.transform='translateX(-50%) translateY(-12px)';
+    setTimeout(()=>toast.remove(),300);
+  },2500);
 }
 function closeGenericModal(result){
   document.getElementById('generic-modal').style.display='none';
