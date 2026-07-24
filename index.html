@@ -2648,6 +2648,7 @@ async function finishSignOut(existing,signOutTime,paid,debtBefore,debtAfter){
   existing.debtBefore=debtBefore;
   existing.debtAfter=debtAfter;
   if(debtAfter!=null) await setDebtFor(existing.idnum,debtAfter);
+  if(debtBefore>0.01 && (debtAfter==null||debtAfter<=0.01)) showDebtSettledPopup(existing.name);
 
   const{error:signOutErr}=await sb.from('sessions').update({
     signed_out:true, sign_out_time:new Date(signOutTime).toISOString(),
@@ -2746,6 +2747,7 @@ async function proceedWithCashPayment(paid){
     await setDebtFor(p.idnum,newDebt);
     renderDebtors();renderSessions();renderRecent();
     setBanner('signin',p.name+(newDebt<=0.01?' has settled their balance':' now owes '+fmtPrice(newDebt)));
+    if(p.owed>0.01 && newDebt<=0.01) showDebtSettledPopup(p.name);
     setTimeout(()=>setBanner('scanning','Waiting for card scan...'),3000);
   }
 }
@@ -2791,9 +2793,15 @@ function watchMpesaTransaction(checkoutRequestId){
     const {data}=await sb.from('mpesa_transactions').select('*').eq('checkout_request_id',checkoutRequestId).maybeSingle();
     if(data && data.status==='success'){
       clearInterval(mpesaPollTimer);
+      const p=pendingPayment;
+      const settledDebt = p && (p.kind==='settle' ? p.owed>0.01 : p.prevDebt>0.01);
+      const settledName = p && (p.kind==='settle' ? p.name : p.existing.name);
       closePaymentModal();
       // the /api/mpesa-callback function already updated sessions/debts server-side —
       // the realtime subscriptions already in place will refresh the UI on their own.
+      // M-Pesa always collects the exact amount due, so a successful payment here
+      // always fully clears whatever debt/balance was owed.
+      if(settledDebt) showDebtSettledPopup(settledName);
     }else if(data && data.status==='failed'){
       clearInterval(mpesaPollTimer);
       document.getElementById('pm-waiting-text').textContent='Payment was not completed (cancelled, wrong PIN, or timed out).';
@@ -3011,6 +3019,11 @@ function showAlertModal(message,{title='Notice',danger=false,icon}={}){
     confirmBtn.style.background=danger?'var(--red)':'var(--green)';
     document.getElementById('generic-modal').style.display='flex';
   });
+}
+// Pops up whenever a customer's outstanding debt actually reaches zero as a
+// result of a payment — used across the cash, signout, and M-Pesa paths.
+function showDebtSettledPopup(name){
+  showAlertModal(`<strong>${name}</strong> has fully settled their debt.`,{title:'Debt settled',icon:'ti-check'});
 }
 function closeGenericModal(result){
   document.getElementById('generic-modal').style.display='none';
