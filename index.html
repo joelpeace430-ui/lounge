@@ -2103,13 +2103,16 @@ async function checkDailyRollover(){
   if(last!==today){
     await finalizeDay(last);
     if(getResetMode()==='clear'){
-      // keep sessions for anyone who still owes money — only clear the ones who are settled up
-      const toClear=sessions.filter(s=>dateKeyOf(s.startTime)===last && getDebt(s.idnum)<=0.01);
+      // keep sessions for anyone who still owes money, and anyone still active (not signed out)
+      const toClear=sessions.filter(s=>dateKeyOf(s.startTime)===last && s.signedOut && getDebt(s.idnum)<=0.01);
       const idsToDelete=toClear.map(s=>s.id);
       const clearIds=new Set(idsToDelete);
       sessions=sessions.filter(s=>!clearIds.has(s.id));
       updateStats();renderSessions();renderRecent();renderActiveCards();renderDebtors();
-      if(idsToDelete.length) await sb.from('sessions').delete().in('id',idsToDelete);
+      if(idsToDelete.length){
+        const {error:delErr}=await sb.from('sessions').delete().in('id',idsToDelete);
+        if(delErr) console.error('checkDailyRollover: session clear failed:',delErr.message);
+      }
     }
     localStorage.setItem('lm_last_check_date',today);
     renderDailyHistory();
