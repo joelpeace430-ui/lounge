@@ -131,10 +131,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .auth-fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
 .auth-fg label{font-size:11px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:.07em;}
 .auth-input-wrap{position:relative;}
-.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;
-  color:var(--ink3);cursor:pointer;padding:4px;display:flex;align-items:center;font-size:16px;}
-.pw-toggle:hover{color:var(--ink);}
-.auth-forgot{text-align:right;margin:-8px 0 14px;}
+.pw-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;
+  color:#8a8a90;cursor:pointer;padding:6px;width:30px;height:30px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:17px;transition:background .15s,color .15s;}
+.pw-toggle:hover{color:var(--ink);background:rgba(0,0,0,.05);}
+.auth-forgot{text-align:right;margin:6px 0 0;}
 .auth-forgot a{font-size:12.5px;color:var(--ink3);cursor:pointer;text-decoration:none;}
 .auth-forgot a:hover{color:var(--ink);text-decoration:underline;}
 .auth-divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--ink3);font-size:12px;}
@@ -936,9 +937,9 @@ body.dark{
       <div class="auth-fg">
         <label>Password</label>
         <div class="auth-input-wrap"><i class="ti ti-lock"></i><input type="password" id="login-pass" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()"/><button type="button" class="pw-toggle" onclick="togglePasswordVisibility('login-pass',this)"><i class="ti ti-eye"></i></button></div>
+        <div class="auth-forgot"><a onclick="openForgotPassword()">Forgot password?</a></div>
       </div>
       <button class="auth-btn" onclick="doLogin()"><i class="ti ti-login"></i> Sign in to dashboard</button>
-      <div class="auth-forgot"><a onclick="openForgotPassword()">Forgot password?</a></div>
       <div class="auth-divider"><span>or</span></div>
       <button class="auth-btn-google" onclick="signInWithGoogle()"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt=""/> Continue with Google</button>
       <div class="auth-switch">Don't have an account? <a onclick="showSignup()">Create one free</a></div>
